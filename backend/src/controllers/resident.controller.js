@@ -1,4 +1,6 @@
 import Resident from '../models/Resident.js';
+import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 
 function addHistory(resident, action, by = 'Hệ thống') {
@@ -91,6 +93,19 @@ export async function createResident(req, res) {
     history: [{ action: 'Thêm mới cư dân', by: req.user?.name || 'Hệ thống', at: new Date() }],
   });
 
+  // Tự động tạo tài khoản cư dân (Plan B)
+  const defaultPassword = cccd.slice(-8);           // 8 số cuối CCCD là mật khẩu mặc định
+  const passwordHash    = await bcrypt.hash(defaultPassword, 10);
+  await User.create({
+    name,
+    username:           cccd,                        // username = số CCCD
+    email:              `${cccd}@resident.local`,    // email placeholder
+    passwordHash,
+    role:               'resident',
+    residentId:         resident._id,
+    mustChangePassword: true,                        // bắt buộc đổi mật khẩu lần đầu
+  });
+
   res.status(201).json({ message: 'Thêm cư dân thành công', resident });
 }
 
@@ -113,7 +128,18 @@ export async function deleteResident(req, res) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
   }
 
+  // BR-006: Không được xóa cư dân đang tạm trú hoặc tạm vắng
+  if (resident.status === 'Tạm trú') {
+    return res.status(409).json({ message: 'Không thể xóa cư dân đang trong thời gian tạm trú' });
+  }
+  if (resident.status === 'Tạm vắng') {
+    return res.status(409).json({ message: 'Không thể xóa cư dân đang trong thời gian tạm vắng' });
+  }
+
+  // Xóa tài khoản User liên kết (nếu có)
+  await User.deleteOne({ residentId: resident._id });
   await resident.deleteOne();
+
   res.json({ message: 'Xóa cư dân thành công' });
 }
 
@@ -165,4 +191,18 @@ export async function registerTamVang(req, res) {
   await resident.save();
 
   res.json({ message: 'Đăng ký tạm vắng thành công', resident });
+}
+
+// GET /residents/me – cư dân xem thông tin cư trú của chính mình
+export async function getMyResidentInfo(req, res) {
+  if (!req.user.residentId) {
+    return res.status(404).json({ message: 'Tài khoản này chưa liên kết với hồ sơ cư dân nào' });
+  }
+
+  const resident = await Resident.findById(req.user.residentId);
+  if (!resident) {
+    return res.status(404).json({ message: 'Hồ sơ cư dân không tồn tại' });
+  }
+
+  res.json({ resident });
 }

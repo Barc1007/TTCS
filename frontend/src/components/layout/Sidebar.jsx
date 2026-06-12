@@ -2,20 +2,21 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_MAP, getInitials } from '../../utils/db';
 import {
-  IcBuilding, IcGrid, IcUsers, IcHome, IcPlane, IcBarChart, IcLogOut,
+  IcBuilding, IcGrid, IcUsers, IcHome, IcPlane, IcBarChart, IcLogOut, IcUser,
 } from '../ui/Icons';
 
-const NAV_ITEMS = [
+// Menu cho cán bộ / admin / staff
+const NAV_ITEMS_STAFF = [
   {
     section: 'Tổng quan',
-    items: [{ path: '/dashboard', Icon: IcGrid,     label: 'Tổng quan' }],
+    items: [{ path: '/dashboard', Icon: IcGrid, label: 'Tổng quan' }],
   },
   {
     section: 'Quản lý',
     items: [
-      { path: '/residents', Icon: IcUsers,    label: 'Cư Dân' },
-      { path: '/tamtru',    Icon: IcHome,     label: 'Tạm Trú' },
-      { path: '/tamvang',   Icon: IcPlane,    label: 'Tạm Vắng' },
+      { path: '/residents', Icon: IcUsers, label: 'Cư Dân' },
+      { path: '/tamtru',    Icon: IcHome,  label: 'Tạm Trú' },
+      { path: '/tamvang',   Icon: IcPlane, label: 'Tạm Vắng' },
     ],
   },
   {
@@ -24,10 +25,21 @@ const NAV_ITEMS = [
   },
 ];
 
+// Menu cho cư dân (read-only, chỉ xem thông tin của mình)
+const NAV_ITEMS_RESIDENT = [
+  {
+    section: 'Tài khoản',
+    items: [{ path: '/my-profile', Icon: IcUser, label: 'Thông Tin Của Tôi' }],
+  },
+];
+
 export default function Sidebar({ isOpen = false, onClose }) {
   const { user, logout } = useAuth();
   const navigate         = useNavigate();
   const { pathname }     = useLocation();
+
+  // Chọn menu phù hợp theo role
+  const navItems = user?.role === 'resident' ? NAV_ITEMS_RESIDENT : NAV_ITEMS_STAFF;
 
   const handleNavigate = (path) => {
     navigate(path);
@@ -46,13 +58,13 @@ export default function Sidebar({ isOpen = false, onClose }) {
         </div>
         <div className="sidebar-logo-text">
           <strong>ResidentIQ</strong>
-          <span>Quản lý chung cư</span>
+          <span>{user?.role === 'resident' ? 'Cổng cư dân' : 'Quản lý chung cư'}</span>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map(({ section, items }) => (
+        {navItems.map(({ section, items }) => (
           <div key={section}>
             <div className="nav-section-label">{section}</div>
             {items.map(({ path, Icon, label }) => (
@@ -86,3 +98,4 @@ export default function Sidebar({ isOpen = false, onClose }) {
     </aside>
   );
 }
+

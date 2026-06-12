@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResidents } from '../../context/ResidentContext';
+import { useAuth } from '../../context/AuthContext';
 import StatusBadge from '../../components/ui/StatusBadge';
-import { IcEye, IcEdit, IcTrash, IcPlus, IcFilter } from '../../components/ui/Icons';
+import { IcEye, IcEdit, IcTrash, IcPlus } from '../../components/ui/Icons';
 import { formatDate } from '../../utils/db';
 
 export default function ResidentList() {
   const { residents, openModal, deleteResident, loading } = useResidents();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const canEdit   = user?.role === 'admin' || user?.role === 'staff';
+  const canDelete = user?.role === 'admin';
   const [query,  setQuery]  = useState('');
   const [filter, setFilter] = useState('');
 
@@ -73,12 +77,16 @@ export default function ResidentList() {
                     <button className="action-btn action-view" onClick={() => navigate(`/residents/${r._id}`)}>
                       <IcEye size={12} /> Xem
                     </button>
-                    <button className="action-btn action-edit" onClick={() => navigate(`/residents/${r._id}?edit=1`)}>
-                      <IcEdit size={12} /> Sửa
-                    </button>
-                    <button className="action-btn action-del" onClick={() => handleDelete(r)}>
-                      <IcTrash size={12} />
-                    </button>
+                    {canEdit && (
+                      <button className="action-btn action-edit" onClick={() => navigate(`/residents/${r._id}?edit=1`)}>
+                        <IcEdit size={12} /> Sửa
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button className="action-btn action-del" onClick={() => handleDelete(r)}>
+                        <IcTrash size={12} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

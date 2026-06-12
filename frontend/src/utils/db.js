@@ -43,7 +43,7 @@ export const DB = {
   clearSession() { localStorage.removeItem('riq_session'); },
 };
 
-export const ROLE_MAP = { admin: 'Cán bộ Quản lý', staff: 'Nhân viên', viewer: 'Người xem' };
+export const ROLE_MAP = { admin: 'Cán bộ Quản lý', staff: 'Nhân viên', resident: 'Cư dân' };
 
 export function getGreeting() {
   const h = new Date().getHours();

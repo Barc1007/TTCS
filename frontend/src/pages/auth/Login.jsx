@@ -34,24 +34,24 @@ export default function Login({ onSwitch }) {
             <IcBuilding size={32} />
           </div>
           <h1 className="auth-brand-title">ResidentIQ</h1>
-          <p className="auth-brand-sub">Hệ Thống Quản Lý Dân Cư Thông Minh</p>
+          <p className="auth-brand-sub">Cổng thông tin dành cho cư dân và ban quản lý chung cư</p>
 
           <div className="auth-features">
             <div className="auth-feature-item">
               <span className="auth-feature-dot" style={{ background: '#34d399' }} />
-              Quản lý thông tin cư dân toàn diện
+              Xem thông tin cư trú cá nhân
             </div>
             <div className="auth-feature-item">
               <span className="auth-feature-dot" style={{ background: '#60a5fa' }} />
-              Theo dõi tạm trú, tạm vắng tức thời
+              Theo dõi trạng thái tạm trú & tạm vắng
             </div>
             <div className="auth-feature-item">
               <span className="auth-feature-dot" style={{ background: '#f472b6' }} />
-              Báo cáo & thống kê dân số chi tiết
+              Tra cứu lịch sử biến động hồ sơ
             </div>
             <div className="auth-feature-item">
               <span className="auth-feature-dot" style={{ background: '#fbbf24' }} />
-              Bảo mật đa lớp với phân quyền vai trò
+              Đăng nhập an toàn, bảo mật thông tin
             </div>
           </div>
 
@@ -134,16 +134,9 @@ export default function Login({ onSwitch }) {
 
           <div className="auth-form-footer">
             <a className="auth-link" onClick={() => onSwitch('forgot')}>Quên mật khẩu?</a>
-            <span className="auth-sep">•</span>
-            <a className="auth-link" onClick={() => onSwitch('register')}>Tạo tài khoản mới</a>
           </div>
 
-          <div className="auth-demo-box">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            Tài khoản demo: <strong>admin</strong> / <strong>123456</strong>
-          </div>
+
         </div>
       </div>
     </div>

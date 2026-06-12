@@ -2,6 +2,7 @@ import { IcArrowLeft, IcEdit, IcTrash, IcSave, IcHome, IcPlane } from '../../com
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useResidents } from '../../context/ResidentContext';
+import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../utils/db';
 
 // Danh sách trường: cá nhân và cư trú
@@ -72,6 +73,9 @@ export default function ResidentDetail() {
   const [searchParams]   = useSearchParams();
   const navigate         = useNavigate();
   const { residents, updateResident, deleteResident, openModal } = useResidents();
+  const { user } = useAuth();
+  const canEdit   = user?.role === 'admin' || user?.role === 'staff';
+  const canDelete = user?.role === 'admin';
 
   const resident = residents.find(r => String(r._id) === String(id));
   const [editMode, setEditMode] = useState(searchParams.get('edit') === '1');
@@ -115,10 +119,14 @@ export default function ResidentDetail() {
           </div>
         </div>
         <div className="btn-group">
-          <button className="btn-secondary" onClick={() => setEditMode(v => !v)}>
-            {editMode ? 'Hủy sửa' : <><IcEdit size={14}/> Chỉnh Sửa</>}
-          </button>
-          <button className="btn-danger" onClick={handleDelete}><IcTrash size={14}/> Xóa</button>
+          {canEdit && (
+            <button className="btn-secondary" onClick={() => setEditMode(v => !v)}>
+              {editMode ? 'Hủy sửa' : <><IcEdit size={14}/> Chỉnh Sửa</>}
+            </button>
+          )}
+          {canDelete && (
+            <button className="btn-danger" onClick={handleDelete}><IcTrash size={14}/> Xóa</button>
+          )}
         </div>
       </div>
 
@@ -166,9 +174,13 @@ export default function ResidentDetail() {
       {/* Các nút hành động */}
       <div className="form-actions mt-16"
         style={{ background: 'transparent', border: 'none', paddingLeft: 0, paddingRight: 0 }}>
-        <button className="btn-outline" onClick={() => navigate('/tamtru')}><IcHome size={14}/> Đăng Ký Tạm Trú</button>
-        <button className="btn-outline" onClick={() => navigate('/tamvang')}><IcPlane size={14}/> Đăng Ký Tạm Vắng</button>
-        {editMode && (
+        {canEdit && (
+          <>
+            <button className="btn-outline" onClick={() => navigate('/tamtru')}><IcHome size={14}/> Đăng Ký Tạm Trú</button>
+            <button className="btn-outline" onClick={() => navigate('/tamvang')}><IcPlane size={14}/> Đăng Ký Tạm Vắng</button>
+          </>
+        )}
+        {editMode && canEdit && (
           <button className="btn-primary" onClick={handleSave}><IcSave size={14}/> Lưu Thay Đổi</button>
         )}
       </div>

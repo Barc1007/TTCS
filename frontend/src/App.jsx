@@ -5,7 +5,7 @@
  *  1. BrowserRouter  → cung cấp routing cho toàn app
  *  2. AuthProvider   → cung cấp thông tin đăng nhập (user, login, logout)
  *  3. AuthGate       → kiểm tra đã đăng nhập chưa:
- *       - Chưa đăng nhập → hiển thị trang auth (Login / Register / ForgotPassword)
+ *       - Chưa đăng nhập → hiển thị trang Login / ForgotPassword
  *       - Đã đăng nhập   → hiển thị app shell (Sidebar + Routes)
  *  4. ResidentProvider → cung cấp state cư dân, toast, modal
  */
@@ -23,9 +23,9 @@ import Toast       from './components/ui/Toast';
 import Modal       from './components/ui/Modal';
 
 // Auth pages
-import Login          from './pages/auth/Login';
-import Register       from './pages/auth/Register';
-import ForgotPassword from './pages/auth/ForgotPassword';
+import Login           from './pages/auth/Login';
+import ForgotPassword  from './pages/auth/ForgotPassword';
+import ChangePassword  from './pages/auth/ChangePassword';
 
 // App pages
 import Dashboard      from './pages/dashboard/Dashboard';
@@ -35,19 +35,24 @@ import ResidentDetail from './pages/residents/ResidentDetail';
 import TamTru         from './pages/residents/TamTru';
 import TamVang        from './pages/residents/TamVang';
 import Reports        from './pages/reports/Reports';
+import MyProfile      from './pages/residents/MyProfile';
 
 // ─── Auth Gate ─────────────────────────────────────────────────────────────
 // Hiển thị trang auth nếu chưa đăng nhập, app shell nếu đã đăng nhập
 function AuthGate() {
   const { user } = useAuth();
-  const [authPage, setAuthPage] = useState('login'); // 'login' | 'register' | 'forgot'
+  const [authPage, setAuthPage] = useState('login'); // 'login' | 'forgot'
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Chưa đăng nhập → trang xác thực
   if (!user) {
-    if (authPage === 'register') return <Register       onSwitch={setAuthPage} />;
-    if (authPage === 'forgot')   return <ForgotPassword onSwitch={setAuthPage} />;
-    return                              <Login          onSwitch={setAuthPage} />;
+    if (authPage === 'forgot') return <ForgotPassword onSwitch={setAuthPage} />;
+    return                            <Login          onSwitch={setAuthPage} />;
+  }
+
+  // Cư dân đăng nhập lần đầu → bắt buộc đổi mật khẩu
+  if (user.mustChangePassword) {
+    return <ChangePassword />;
   }
 
   // Đã đăng nhập → app shell với sidebar và routes
@@ -60,26 +65,38 @@ function AuthGate() {
         </button>
         {sidebarOpen && <button type="button" className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-label="Đóng menu" />}
         <Routes>
-          {/* Redirect mặc định */}
-          <Route path="/"              element={<Navigate to="/dashboard" replace />} />
+          {/* ── RESIDENT: chỉ được xem hồ sơ cá nhân ── */}
+          {user.role === 'resident' ? (
+            <>
+              <Route path="/"           element={<Navigate to="/my-profile" replace />} />
+              <Route path="/my-profile" element={<MyProfile />} />
+              <Route path="*"           element={<Navigate to="/my-profile" replace />} />
+            </>
+          ) : (
+            <>
+              {/* ── STAFF / ADMIN ── */}
+              {/* Redirect mặc định */}
+              <Route path="/"              element={<Navigate to="/dashboard" replace />} />
 
-          {/* Dashboard */}
-          <Route path="/dashboard"     element={<Dashboard />} />
+              {/* Dashboard */}
+              <Route path="/dashboard"     element={<Dashboard />} />
 
-          {/* Quản lý cư dân */}
-          <Route path="/residents"     element={<ResidentList />} />
-          <Route path="/residents/add" element={<ResidentAdd />} />
-          <Route path="/residents/:id" element={<ResidentDetail />} />
+              {/* Quản lý cư dân */}
+              <Route path="/residents"     element={<ResidentList />} />
+              <Route path="/residents/add" element={<ResidentAdd />} />
+              <Route path="/residents/:id" element={<ResidentDetail />} />
 
-          {/* Tạm trú / Tạm vắng */}
-          <Route path="/tamtru"        element={<TamTru />} />
-          <Route path="/tamvang"       element={<TamVang />} />
+              {/* Tạm trú / Tạm vắng */}
+              <Route path="/tamtru"        element={<TamTru />} />
+              <Route path="/tamvang"       element={<TamVang />} />
 
-          {/* Báo cáo */}
-          <Route path="/reports"       element={<Reports />} />
+              {/* Báo cáo */}
+              <Route path="/reports"       element={<Reports />} />
 
-          {/* Fallback */}
-          <Route path="*"              element={<Navigate to="/dashboard" replace />} />
+              {/* Fallback */}
+              <Route path="*"              element={<Navigate to="/dashboard" replace />} />
+            </>
+          )}
         </Routes>
 
         {/* Global UI: Toast notification & Confirm modal */}

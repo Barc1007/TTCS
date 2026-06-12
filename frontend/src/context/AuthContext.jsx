@@ -48,8 +48,15 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Dành cho cư dân đổi mật khẩu lần đầu (mustChangePassword = true)
+  const changePassword = async (newPassword) => {
+    await api.post('/auth/change-password', { newPassword });
+    // Tắt cờ bắt buộc đổi mật khẩu trong state local
+    setUser(prev => ({ ...prev, mustChangePassword: false }));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

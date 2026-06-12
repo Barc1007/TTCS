@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createResident,
   deleteResident,
+  getMyResidentInfo,
   getResidentById,
   getResidentStats,
   listResidents,
@@ -15,9 +16,11 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get('/', listResidents);
+// Route /me phải đặt TRƯỚC /:id để không bị nhầm thành ID
+router.get('/me',    requireRole('resident'), getMyResidentInfo);
+router.get('/',      listResidents);
 router.get('/stats', getResidentStats);
-router.get('/:id', getResidentById);
+router.get('/:id',   getResidentById);
 router.post('/', requireRole('admin', 'staff'), createResident);
 router.put('/:id', requireRole('admin', 'staff'), updateResident);
 router.delete('/:id', requireRole('admin'), deleteResident);
