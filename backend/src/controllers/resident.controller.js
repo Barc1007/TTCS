@@ -72,9 +72,27 @@ export async function createResident(req, res) {
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin bắt buộc' });
   }
 
+  if (!/^\d{12}$/.test(cccd)) {
+    return res.status(400).json({ message: 'Số CCCD phải đúng 12 chữ số' });
+  }
+
+  if (status === 'Tạm vắng') {
+    return res.status(400).json({ message: 'Không được đặt trạng thái "Tạm vắng" khi thêm cư dân mới' });
+  }
+
   const existed = await Resident.findOne({ cccd });
   if (existed) {
     return res.status(409).json({ message: 'CCCD đã tồn tại trong hệ thống' });
+  }
+
+  // Kiểm tra Chủ hộ: mỗi phòng chỉ được có 1 người là Chủ hộ
+  if (!relation || relation === 'Chủ hộ') {
+    const existingChuHo = await Resident.findOne({ room, relation: 'Chủ hộ' });
+    if (existingChuHo) {
+      return res.status(409).json({
+        message: `Phòng ${room} đã có Chủ hộ (${existingChuHo.name}). Mỗi phòng chỉ được có 1 Chủ hộ.`,
+      });
+    }
   }
 
   const resident = await Resident.create({
@@ -115,6 +133,22 @@ export async function updateResident(req, res) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
   }
 
+  // Kiểm tra Chủ hộ khi cập nhật: nếu đang đổi relation thành 'Chủ hộ'
+  const newRelation = req.body.relation;
+  const newRoom     = req.body.room || resident.room;
+  if (newRelation === 'Chủ hộ') {
+    const existingChuHo = await Resident.findOne({
+      room: newRoom,
+      relation: 'Chủ hộ',
+      _id: { $ne: resident._id },   // loại trừ chính cư dân này
+    });
+    if (existingChuHo) {
+      return res.status(409).json({
+        message: `Phòng ${newRoom} đã có Chủ hộ (${existingChuHo.name}). Mỗi phòng chỉ được có 1 Chủ hộ.`,
+      });
+    }
+  }
+
   Object.assign(resident, req.body);
   addHistory(resident, 'Cập nhật thông tin cư dân', req.user?.name || 'Hệ thống');
   await resident.save();
@@ -153,6 +187,9 @@ export async function registerTamTru(req, res) {
   if (!address || !start || !end || !phone) {
     return res.status(400).json({ message: 'Thiếu thông tin tạm trú' });
   }
+  if (!/^0\d{9}$/.test(phone)) {
+    return res.status(400).json({ message: 'Số điện thoại phải đúng 10 chữ số và bắt đầu bằng 0' });
+  }
   if (end < start) {
     return res.status(400).json({ message: 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' });
   }
@@ -177,6 +214,9 @@ export async function registerTamVang(req, res) {
   const { destination, start, end, reason, phone } = req.body;
   if (!destination || !start || !end || !phone) {
     return res.status(400).json({ message: 'Thiếu thông tin tạm vắng' });
+  }
+  if (!/^0\d{9}$/.test(phone)) {
+    return res.status(400).json({ message: 'Số điện thoại phải đúng 10 chữ số và bắt đầu bằng 0' });
   }
   if (end < start) {
     return res.status(400).json({ message: 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' });
