@@ -9,6 +9,7 @@ const STATUS_CONFIG = {
   'Thường trú': { label: 'Thường trú', color: '#22c47a', bg: '#f0fdf4', border: '#bbf7d0' },
   'Tạm trú':    { label: 'Tạm trú',    color: '#f5a623', bg: '#fffbeb', border: '#fde68a' },
   'Tạm vắng':   { label: 'Tạm vắng',   color: '#f05b5b', bg: '#fff1f2', border: '#fecdd3' },
+  'Không ở':    { label: 'Không ở',    color: '#64748b', bg: '#f1f5f9', border: '#e2e8f0' },
 };
 
 function InfoRow({ label, value }) {

@@ -41,7 +41,7 @@ function FieldEdit({ label, fieldKey, value, onChange }) {
         <div className="detail-label">{label}</div>
         <select className="detail-input" value={value}
           onChange={e => onChange(fieldKey, e.target.value)}>
-          {['Thường trú', 'Tạm trú', 'Tạm vắng'].map(o => <option key={o}>{o}</option>)}
+          {['Thường trú', 'Tạm trú', 'Tạm vắng', 'Không ở'].map(o => <option key={o}>{o}</option>)}
         </select>
       </div>
     );
@@ -176,7 +176,7 @@ export default function ResidentDetail() {
       </div>
 
       {/* Phiếu Tạm Trú (nếu có) */}
-      {resident.tamTru && resident.tamTru.address && (
+      {resident.status === 'Tạm trú' && resident.tamTru && (
         <div className="card mt-16" style={{ borderLeft: '4px solid var(--primary)' }}>
           <div className="card-header" style={{ background: 'var(--primary-soft)' }}>
             <div>
@@ -217,7 +217,7 @@ export default function ResidentDetail() {
       )}
 
       {/* Phiếu Tạm Vắng (nếu có) */}
-      {resident.tamVang && resident.tamVang.destination && (
+      {resident.status === 'Tạm vắng' && resident.tamVang && (
         <div className="card mt-16" style={{ borderLeft: '4px solid var(--orange)' }}>
           <div className="card-header" style={{ background: 'var(--orange-soft)' }}>
             <div>

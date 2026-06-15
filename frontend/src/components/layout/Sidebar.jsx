@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_MAP, getInitials } from '../../utils/db';
 import {
-  IcBuilding, IcGrid, IcUsers, IcHome, IcPlane, IcBarChart, IcLogOut, IcUser,
+  IcBuilding, IcGrid, IcUsers, IcHome, IcPlane, IcBarChart, IcLogOut, IcUser, IcKey
 } from '../ui/Icons';
 
 // Menu cho cán bộ / admin / staff
@@ -23,13 +23,20 @@ const NAV_ITEMS_STAFF = [
     section: 'Báo cáo',
     items: [{ path: '/reports', Icon: IcBarChart, label: 'Thống kê & Báo Cáo' }],
   },
+  {
+    section: 'Cài đặt',
+    items: [{ path: '/update-password', Icon: IcKey, label: 'Đổi mật khẩu' }],
+  },
 ];
 
 // Menu cho cư dân (read-only, chỉ xem thông tin của mình)
 const NAV_ITEMS_RESIDENT = [
   {
     section: 'Tài khoản',
-    items: [{ path: '/my-profile', Icon: IcUser, label: 'Thông Tin Của Tôi' }],
+    items: [
+      { path: '/my-profile', Icon: IcUser, label: 'Thông Tin Của Tôi' },
+      { path: '/update-password', Icon: IcKey, label: 'Đổi mật khẩu' },
+    ],
   },
 ];
 

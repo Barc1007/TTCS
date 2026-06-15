@@ -60,6 +60,7 @@ export default function Dashboard() {
   const thuongtru = residents.filter(r => r.status === 'Thường trú').length;
   const tamtru    = residents.filter(r => r.status === 'Tạm trú').length;
   const tamvang   = residents.filter(r => r.status === 'Tạm vắng').length;
+  const khongo    = residents.filter(r => r.status === 'Không ở').length;
 
   const greeting  = getGreeting();
   const firstName = user?.name?.split(' ').pop() || 'Admin';
@@ -124,10 +125,10 @@ export default function Dashboard() {
     donutChart.current = new Chart(doCtx, {
       type: 'doughnut',
       data: {
-        labels: ['Thường trú', 'Tạm trú', 'Tạm vắng'],
+        labels: ['Thường trú', 'Tạm trú', 'Tạm vắng', 'Không ở'],
         datasets: [{
-          data: [thuongtru, tamtru, tamvang],
-          backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+          data: [thuongtru, tamtru, tamvang, khongo],
+          backgroundColor: ['#22c55e', '#f59e0b', '#ef4444', '#94a3b8'],
           borderWidth: 3, borderColor: '#fff', hoverOffset: 6,
         }],
       },
@@ -147,7 +148,8 @@ export default function Dashboard() {
     { icon: IcUsers,     iconBg: '#eff6ff', iconColor: '#3b82f6', value: total,     label: 'Tổng cư dân', trend: `${total - prevTotal >= 0 ? '+' : ''}${total - prevTotal} so với tháng trước`,     trendUp: total - prevTotal >= 0 },
     { icon: IcHome,      iconBg: '#f0fdf4', iconColor: '#22c55e', value: thuongtru, label: 'Thường trú',  trend: `${thuongtru} cư dân đang thường trú`,  trendUp: true },
     { icon: IcClipboard, iconBg: '#fff7ed', iconColor: '#f97316', value: tamtru,    label: 'Tạm trú',     trend: `${tamtru} cư dân đang tạm trú`,    trendUp: true },
-    { icon: IcPlane,     iconBg: '#eff6ff', iconColor: '#60a5fa', value: tamvang,   label: 'Tạm vắng',    trend: `${tamvang} cư dân đang tạm vắng`,   trendUp: false },
+    { icon: IcPlane,     iconBg: '#fef2f2', iconColor: '#ef4444', value: tamvang,   label: 'Tạm vắng',    trend: `${tamvang} cư dân đang tạm vắng`,   trendUp: false },
+    { icon: IcUsers,     iconBg: '#f1f5f9', iconColor: '#64748b', value: khongo,    label: 'Không ở',     trend: `${khongo} chủ hộ không ở`,          trendUp: false },
   ];
 
   // Hoạt động gần đây từ API

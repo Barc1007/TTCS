@@ -9,8 +9,9 @@ const TODAY = new Date().toISOString().split('T')[0];
 const EMPTY_FORM = {
   name: '', cccd: '', dob: '', gender: '', room: '', status: '',
   address: '', ethnic: 'Kinh', religion: 'Không', job: '',
-  relation: 'Chủ hộ', regdate: TODAY,
+  relation: 'Chủ hộ', regdate: TODAY, email: '', tamTruEnd: '',
 };
+
 
 export default function ResidentAdd() {
   const { addResident, residents } = useResidents();
@@ -18,9 +19,16 @@ export default function ResidentAdd() {
   const [form,  setForm]  = useState(EMPTY_FORM);
   const [error, setError] = useState('');
 
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => {
+    const val = e.target.value;
+    if (k === 'status' && val === 'Tạm trú' && form.relation === 'Chủ hộ') {
+      setForm(f => ({ ...f, [k]: val, relation: 'Khác' }));
+    } else {
+      setForm(f => ({ ...f, [k]: val }));
+    }
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!form.name || !form.cccd || !form.dob || !form.gender || !form.room || !form.status) {
@@ -43,9 +51,33 @@ export default function ResidentAdd() {
       setError(`Phòng ${form.room} đã có Chủ hộ! Mỗi phòng chỉ được có 1 Chủ hộ.`);
       return;
     }
-    addResident(form);
-    navigate('/residents');
+    if (form.status === 'Tạm trú') {
+      if (form.relation === 'Chủ hộ') {
+        setError('Người tạm trú không thể là Chủ hộ!');
+        return;
+      }
+      if (!form.tamTruEnd) {
+        setError('Vui lòng nhập ngày kết thúc tạm trú!');
+        return;
+      }
+      if (form.tamTruEnd < form.regdate) {
+        setError('Ngày kết thúc tạm trú không được nhỏ hơn ngày đăng ký!');
+        return;
+      }
+    }
+    // Validate email nếu nhập
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError('Email không đúng định dạng!');
+      return;
+    }
+    try {
+      await addResident(form);
+      navigate('/residents');
+    } catch (err) {
+      setError(err.message || 'Lỗi khi thêm cư dân');
+    }
   };
+
 
   return (
     <main className="main-content">
@@ -102,6 +134,11 @@ export default function ResidentAdd() {
                 <label>Nghề nghiệp</label>
                 <input type="text" placeholder="Kỹ sư phần mềm" value={form.job} onChange={set('job')} />
               </div>
+              <div className="form-group">
+                <label>Email <span style={{fontSize:12,color:'#888'}}>(dùng để khôi phục mật khẩu)</span></label>
+                <input type="email" placeholder="example@gmail.com" value={form.email} onChange={set('email')} />
+              </div>
+
             </div>
           </div>
 
@@ -118,7 +155,7 @@ export default function ResidentAdd() {
                   <label>Trạng thái <span className="required">*</span></label>
                   <select value={form.status} onChange={set('status')}>
                     <option value="">-- Chọn --</option>
-                    <option>Thường trú</option><option>Tạm trú</option>
+                    <option>Thường trú</option><option>Tạm trú</option><option>Không ở</option>
                   </select>
                 </div>
               </div>
@@ -129,14 +166,21 @@ export default function ResidentAdd() {
               <div className="form-group">
                 <label>Quan hệ với chủ hộ</label>
                 <select value={form.relation} onChange={set('relation')}>
-                  <option>Chủ hộ</option><option>Vợ/Chồng</option>
+                  {form.status !== 'Tạm trú' && <option>Chủ hộ</option>}
+                  <option>Vợ/Chồng</option>
                   <option>Con</option><option>Cha/Mẹ</option><option>Khác</option>
                 </select>
               </div>
               <div className="form-group">
-                <label>Ngày đăng ký <span className="required">*</span></label>
+                <label>Ngày đăng ký (bắt đầu) <span className="required">*</span></label>
                 <input type="date" value={form.regdate} onChange={set('regdate')} />
               </div>
+              {form.status === 'Tạm trú' && (
+                <div className="form-group">
+                  <label>Ngày kết thúc tạm trú <span className="required">*</span></label>
+                  <input type="date" value={form.tamTruEnd} onChange={set('tamTruEnd')} />
+                </div>
+              )}
             </div>
           </div>
         </div>

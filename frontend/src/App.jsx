@@ -36,6 +36,7 @@ import TamTru         from './pages/residents/TamTru';
 import TamVang        from './pages/residents/TamVang';
 import Reports        from './pages/reports/Reports';
 import MyProfile      from './pages/residents/MyProfile';
+import UpdatePassword from './pages/auth/UpdatePassword';
 
 // ─── Auth Gate ─────────────────────────────────────────────────────────────
 // Hiển thị trang auth nếu chưa đăng nhập, app shell nếu đã đăng nhập
@@ -70,6 +71,7 @@ function AuthGate() {
             <>
               <Route path="/"           element={<Navigate to="/my-profile" replace />} />
               <Route path="/my-profile" element={<MyProfile />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="*"           element={<Navigate to="/my-profile" replace />} />
             </>
           ) : (
@@ -92,6 +94,9 @@ function AuthGate() {
 
               {/* Báo cáo */}
               <Route path="/reports"       element={<Reports />} />
+
+              {/* Đổi mật khẩu */}
+              <Route path="/update-password" element={<UpdatePassword />} />
 
               {/* Fallback */}
               <Route path="*"              element={<Navigate to="/dashboard" replace />} />

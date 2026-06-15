@@ -15,6 +15,7 @@ export async function getResidentStats(_req, res) {
   const thuongtru = allResidents.filter(r => r.status === 'Thường trú').length;
   const tamtru    = allResidents.filter(r => r.status === 'Tạm trú').length;
   const tamvang   = allResidents.filter(r => r.status === 'Tạm vắng').length;
+  const khongo    = allResidents.filter(r => r.status === 'Không ở').length;
 
   // Thống kê theo tháng (6 tháng gần nhất)
   const now = new Date();
@@ -47,6 +48,7 @@ export async function getResidentStats(_req, res) {
     thuongtru,
     tamtru,
     tamvang,
+    khongo,
     monthlyStats,
     recentActivities,
   });
@@ -66,7 +68,7 @@ export async function getResidentById(req, res) {
 }
 
 export async function createResident(req, res) {
-  const { cccd, name, dob, gender, room, status, address, ethnic, religion, job, relation, regdate } = req.body;
+  const { cccd, name, dob, gender, room, status, address, ethnic, religion, job, relation, regdate, email, tamTruEnd } = req.body;
 
   if (!cccd || !name || !dob || !gender || !room || !regdate) {
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin bắt buộc' });
@@ -78,6 +80,14 @@ export async function createResident(req, res) {
 
   if (status === 'Tạm vắng') {
     return res.status(400).json({ message: 'Không được đặt trạng thái "Tạm vắng" khi thêm cư dân mới' });
+  }
+
+  if (status === 'Tạm trú' && relation === 'Chủ hộ') {
+    return res.status(400).json({ message: 'Người tạm trú không thể là Chủ hộ' });
+  }
+
+  if (status === 'Tạm trú' && !tamTruEnd) {
+    return res.status(400).json({ message: 'Thiếu ngày kết thúc tạm trú' });
   }
 
   const existed = await Resident.findOne({ cccd });
@@ -108,21 +118,35 @@ export async function createResident(req, res) {
     job: job || '',
     relation: relation || 'Chủ hộ',
     regdate,
+    tamTru: status === 'Tạm trú' ? { address: address || '', start: regdate, end: tamTruEnd, reason: '', phone: '' } : null,
     history: [{ action: 'Thêm mới cư dân', by: req.user?.name || 'Hệ thống', at: new Date() }],
   });
 
-  // Tự động tạo tài khoản cư dân (Plan B)
   const defaultPassword = cccd.slice(-8);           // 8 số cuối CCCD là mật khẩu mặc định
   const passwordHash    = await bcrypt.hash(defaultPassword, 10);
+
+  // Dùng email thật nếu có, không thì dùng placeholder
+  const userEmail = email && email.includes('@') ? email.toLowerCase() : `${cccd}@resident.local`;
+
+  // Kiểm tra email có bị trùng không
+  if (email && email.includes('@')) {
+    const existingEmail = await User.findOne({ email: userEmail });
+    if (existingEmail) {
+      await Resident.deleteOne({ _id: resident._id }); // rollback resident
+      return res.status(409).json({ message: 'Email này đã được sử dụng bởi tài khoản khác' });
+    }
+  }
+
   await User.create({
     name,
-    username:           cccd,                        // username = số CCCD
-    email:              `${cccd}@resident.local`,    // email placeholder
+    username:           cccd,
+    email:              userEmail,
     passwordHash,
     role:               'resident',
     residentId:         resident._id,
-    mustChangePassword: true,                        // bắt buộc đổi mật khẩu lần đầu
+    mustChangePassword: true,
   });
+
 
   res.status(201).json({ message: 'Thêm cư dân thành công', resident });
 }

@@ -28,7 +28,7 @@ const residentSchema = new mongoose.Schema(
     dob: { type: String, required: true },
     gender: { type: String, required: true },
     room: { type: String, required: true },
-    status: { type: String, enum: ['Thường trú', 'Tạm trú', 'Tạm vắng'], default: 'Thường trú' },
+    status: { type: String, enum: ['Thường trú', 'Tạm trú', 'Tạm vắng', 'Không ở'], default: 'Thường trú' },
     address: { type: String, default: '' },
     ethnic: { type: String, default: 'Kinh' },
     religion: { type: String, default: 'Không' },

@@ -50,6 +50,7 @@ export default function ResidentList() {
             <option value="Thường trú">Thường trú</option>
             <option value="Tạm trú">Tạm trú</option>
             <option value="Tạm vắng">Tạm vắng</option>
+            <option value="Không ở">Không ở</option>
           </select>
         </div>
 
