@@ -80,6 +80,7 @@ export default function ResidentDetail() {
   const resident = residents.find(r => String(r._id) === String(id));
   const [editMode, setEditMode] = useState(searchParams.get('edit') === '1');
   const [edits,    setEdits]    = useState({});
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     if (resident) setEdits({ ...resident });
@@ -92,8 +93,28 @@ export default function ResidentDetail() {
     </main>
   );
 
-  const handleChange = (k, v) => setEdits(e => ({ ...e, [k]: v }));
-  const handleSave   = () => { updateResident(resident._id, edits); setEditMode(false); };
+  const handleChange = (k, v) => { setEdits(e => ({ ...e, [k]: v })); setSaveError(''); };
+  const handleSave = async () => {
+    setSaveError('');
+    // Kiểm tra Chủ hộ trùng phòng (frontend guard)
+    if (edits.relation === 'Chủ hộ') {
+      const conflict = residents.find(
+        (r) => r.room === (edits.room || resident.room)
+             && r.relation === 'Chủ hộ'
+             && String(r._id) !== String(resident._id)
+      );
+      if (conflict) {
+        setSaveError(`Phòng ${edits.room || resident.room} đã có Chủ hộ (${conflict.name}). Mỗi phòng chỉ được 1 Chủ hộ.`);
+        return;
+      }
+    }
+    try {
+      await updateResident(resident._id, edits);
+      setEditMode(false);
+    } catch (err) {
+      setSaveError(err.message || 'Không thể lưu thông tin. Vui lòng thử lại.');
+    }
+  };
 
   const handleDelete = () => {
     openModal(
@@ -154,26 +175,111 @@ export default function ResidentDetail() {
         </div>
       </div>
 
-      {/* Lịch sử biến động */}
-      <div className="card mt-16">
-        <div className="card-header"><h3>Lịch Sử Biến Động</h3></div>
-        {(resident.history || []).length ? resident.history.map((item, index) => (
-          <div key={index} className="activity-item">
-            <span className="badge badge-blue">{item.action}</span>
-            <span className="activity-text">{item.by || 'Hệ thống'}</span>
-            <span className="time">{formatDate(String(item.at).slice(0, 10))}</span>
+      {/* Phiếu Tạm Trú (nếu có) */}
+      {resident.tamTru && resident.tamTru.address && (
+        <div className="card mt-16" style={{ borderLeft: '4px solid var(--primary)' }}>
+          <div className="card-header" style={{ background: 'var(--primary-soft)' }}>
+            <div>
+              <h3 style={{ color: 'var(--primary)' }}>📋 Phiếu Đăng Ký Tạm Trú</h3>
+              <p>Thông tin đăng ký tạm trú hiện tại của cư dân</p>
+            </div>
+            <span className="badge badge-blue">Đang tạm trú</span>
           </div>
-        )) : (
-          <div className="activity-item">
-            <span className="badge badge-gray">Trống</span>
-            <span>Chưa có lịch sử biến động</span>
+          <div className="form-body">
+            <div className="form-grid-2">
+              <div>
+                <div className="detail-field">
+                  <div className="detail-label">Địa chỉ tạm trú</div>
+                  <div className="detail-value">{resident.tamTru.address || '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <div className="detail-label">Lý do tạm trú</div>
+                  <div className="detail-value">{resident.tamTru.reason || '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <div className="detail-label">Số điện thoại liên hệ</div>
+                  <div className="detail-value">{resident.tamTru.phone || '—'}</div>
+                </div>
+              </div>
+              <div>
+                <div className="detail-field">
+                  <div className="detail-label">Ngày bắt đầu</div>
+                  <div className="detail-value">{formatDate(resident.tamTru.start) || '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <div className="detail-label">Ngày kết thúc</div>
+                  <div className="detail-value">{formatDate(resident.tamTru.end) || '—'}</div>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Phiếu Tạm Vắng (nếu có) */}
+      {resident.tamVang && resident.tamVang.destination && (
+        <div className="card mt-16" style={{ borderLeft: '4px solid var(--orange)' }}>
+          <div className="card-header" style={{ background: 'var(--orange-soft)' }}>
+            <div>
+              <h3 style={{ color: 'var(--orange)' }}>✈️ Phiếu Đăng Ký Tạm Vắng</h3>
+              <p>Thông tin đăng ký tạm vắng hiện tại của cư dân</p>
+            </div>
+            <span className="badge" style={{ background: 'var(--orange-soft)', color: 'var(--orange)', border: '1px solid var(--orange)' }}>Đang tạm vắng</span>
+          </div>
+          <div className="form-body">
+            <div className="form-grid-2">
+              <div>
+                <div className="detail-field">
+                  <div className="detail-label">Nơi đến</div>
+                  <div className="detail-value">{resident.tamVang.destination || '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <div className="detail-label">Lý do tạm vắng</div>
+                  <div className="detail-value">{resident.tamVang.reason || '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <div className="detail-label">Số điện thoại liên hệ</div>
+                  <div className="detail-value">{resident.tamVang.phone || '—'}</div>
+                </div>
+              </div>
+              <div>
+                <div className="detail-field">
+                  <div className="detail-label">Ngày đi</div>
+                  <div className="detail-value">{formatDate(resident.tamVang.start) || '—'}</div>
+                </div>
+                <div className="detail-field">
+                  <div className="detail-label">Ngày dự kiến về</div>
+                  <div className="detail-value">{formatDate(resident.tamVang.end) || '—'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {canEdit && (
+        <div className="card mt-16">
+          <div className="card-header"><h3>Lịch Sử Biến Động</h3></div>
+          {(resident.history || []).length ? resident.history.map((item, index) => (
+            <div key={index} className="activity-item">
+              <span className="badge badge-blue">{item.action}</span>
+              <span className="activity-text">{item.by || 'Hệ thống'}</span>
+              <span className="time">{formatDate(String(item.at).slice(0, 10))}</span>
+            </div>
+          )) : (
+            <div className="activity-item">
+              <span className="badge badge-gray">Trống</span>
+              <span>Chưa có lịch sử biến động</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Các nút hành động */}
       <div className="form-actions mt-16"
         style={{ background: 'transparent', border: 'none', paddingLeft: 0, paddingRight: 0 }}>
+        {saveError && (
+          <div className="alert-error" style={{ width: '100%', marginBottom: 8 }}>{saveError}</div>
+        )}
         {canEdit && (
           <>
             <button className="btn-outline" onClick={() => navigate('/tamtru')}><IcHome size={14}/> Đăng Ký Tạm Trú</button>

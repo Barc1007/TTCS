@@ -26,6 +26,10 @@ export default function TamVang() {
       setError('Ngày kết thúc không được nhỏ hơn ngày bắt đầu.');
       return;
     }
+    if (!/^0\d{9}$/.test(form.phone)) {
+      setError('Số điện thoại phải đúng 10 chữ số và bắt đầu bằng 0!');
+      return;
+    }
     registerTamVang(form.resident, {
       start: form.start,
       end: form.end,
@@ -34,8 +38,7 @@ export default function TamVang() {
       phone: form.phone,
     }).then(() => {
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-      setTimeout(() => navigate('/residents'), 800);
+      setTimeout(() => navigate(`/residents/${form.resident}`), 800);
     }).catch((err) => setError(err.message || 'Không thể đăng ký tạm vắng'));
   };
 

@@ -27,12 +27,20 @@ export default function ResidentAdd() {
       setError('Vui lòng điền đầy đủ thông tin bắt buộc!');
       return;
     }
+    if (!/^\d{12}$/.test(form.cccd)) {
+      setError('Số CCCD phải đúng 12 chữ số!');
+      return;
+    }
     if (residents.some((r) => r.cccd === form.cccd)) {
       setError('CCCD đã tồn tại trong hệ thống!');
       return;
     }
     if (form.regdate > TODAY) {
       setError('Ngày đăng ký không được lớn hơn ngày hiện tại!');
+      return;
+    }
+    if (form.relation === 'Chủ hộ' && residents.some((r) => r.room === form.room && r.relation === 'Chủ hộ')) {
+      setError(`Phòng ${form.room} đã có Chủ hộ! Mỗi phòng chỉ được có 1 Chủ hộ.`);
       return;
     }
     addResident(form);
@@ -110,7 +118,7 @@ export default function ResidentAdd() {
                   <label>Trạng thái <span className="required">*</span></label>
                   <select value={form.status} onChange={set('status')}>
                     <option value="">-- Chọn --</option>
-                    <option>Thường trú</option><option>Tạm trú</option><option>Tạm vắng</option>
+                    <option>Thường trú</option><option>Tạm trú</option>
                   </select>
                 </div>
               </div>
