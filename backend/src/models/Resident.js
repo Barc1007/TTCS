@@ -33,11 +33,13 @@ const residentSchema = new mongoose.Schema(
     ethnic: { type: String, default: 'Kinh' },
     religion: { type: String, default: 'Không' },
     job: { type: String, default: '' },
+    email: { type: String, default: '' },
     relation: { type: String, default: 'Chủ hộ' },
     regdate: { type: String, required: true },
     tamTru: { type: temporarySchema, default: null },
     tamVang: { type: temporarySchema, default: null },
     history: { type: [historySchema], default: [] },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

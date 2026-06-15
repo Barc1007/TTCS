@@ -63,6 +63,7 @@ export async function login(req, res) {
 
   const user = await User.findOne({
     $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
+    isDeleted: { $ne: true },
   });
 
   if (!user) {

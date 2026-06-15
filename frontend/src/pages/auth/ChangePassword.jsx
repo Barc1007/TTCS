@@ -105,7 +105,6 @@ export default function ChangePassword() {
                 <input
                   type={showNew ? 'text' : 'password'}
                   className="auth-input"
-                  placeholder="Tối thiểu 8 ký tự"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   autoComplete="new-password"
@@ -124,7 +123,6 @@ export default function ChangePassword() {
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   className="auth-input"
-                  placeholder="Nhập lại mật khẩu mới"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
                   autoComplete="new-password"

@@ -9,6 +9,7 @@ import {
   registerTamTru,
   registerTamVang,
   updateResident,
+  exportResidentsPDF,
 } from '../controllers/resident.controller.js';
 import { requireAuth, requireRole } from '../middleware/auth.middleware.js';
 
@@ -20,6 +21,7 @@ router.use(requireAuth);
 router.get('/me',    requireRole('resident'), getMyResidentInfo);
 router.get('/',      listResidents);
 router.get('/stats', getResidentStats);
+router.get('/export/pdf', exportResidentsPDF);
 router.get('/:id',   getResidentById);
 router.post('/', requireRole('admin', 'staff'), createResident);
 router.put('/:id', requireRole('admin', 'staff'), updateResident);

@@ -45,9 +45,13 @@ export function ResidentProvider({ children }) {
   };
 
   const deleteResident = async (id) => {
-    await api.delete(`/residents/${id}`);
-    setResidents((prev) => prev.filter((resident) => resident._id !== id));
-    showToast('🗑️ Đã xóa cư dân');
+    try {
+      await api.delete(`/residents/${id}`);
+      setResidents((prev) => prev.filter((resident) => resident._id !== id));
+      showToast('🗑️ Đã xóa cư dân thành công');
+    } catch (error) {
+      showToast(`❌ ${error.message || 'Không thể xóa cư dân'}`);
+    }
   };
 
   const registerTamTru = async (id, payload) => {

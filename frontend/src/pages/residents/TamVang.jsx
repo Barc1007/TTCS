@@ -77,16 +77,16 @@ export default function TamVang() {
           </div>
           <div className="form-group">
             <label>Nơi đến <span className="required">*</span></label>
-            <input type="text" placeholder="Hà Nội" value={form.dest} onChange={set('dest')} />
+            <input type="text" value={form.dest} onChange={set('dest')} />
           </div>
           <div className="form-group">
             <label>Lý do tạm vắng <span className="required">*</span></label>
-            <textarea rows={3} placeholder="Công tác, học tập..."
+            <textarea rows={3}
               value={form.reason} onChange={set('reason')} />
           </div>
           <div className="form-group">
             <label>Số điện thoại liên hệ <span className="required">*</span></label>
-            <input type="tel" placeholder="0901234567"
+            <input type="tel"
               value={form.phone} onChange={set('phone')} />
           </div>
         </div>

@@ -73,7 +73,6 @@ export default function UpdatePassword() {
               <div className="input-pwd-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   type={showOld ? 'text' : 'password'}
-                  placeholder="Nhập mật khẩu hiện tại"
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
                   style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}
@@ -94,7 +93,6 @@ export default function UpdatePassword() {
               <div className="input-pwd-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   type={showNew ? 'text' : 'password'}
-                  placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}
@@ -115,7 +113,6 @@ export default function UpdatePassword() {
               <div className="input-pwd-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                   type={showConfirm ? 'text' : 'password'}
-                  placeholder="Nhập lại mật khẩu mới"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}

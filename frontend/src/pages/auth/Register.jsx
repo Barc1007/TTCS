@@ -44,21 +44,21 @@ export default function Register({ onSwitch }) {
           <div className="form-row">
             <div className="form-group">
               <label>Họ và tên <span className="required">*</span></label>
-              <input type="text" placeholder="Nguyễn Văn A" value={form.name} onChange={set('name')} required />
+              <input type="text" value={form.name} onChange={set('name')} required />
             </div>
             <div className="form-group">
               <label>Tên đăng nhập <span className="required">*</span></label>
-              <input type="text" placeholder="nguyenvana" value={form.username} onChange={set('username')} required />
+              <input type="text" value={form.username} onChange={set('username')} required />
             </div>
           </div>
           <div className="form-group">
             <label>Email <span className="required">*</span></label>
-            <input type="email" placeholder="email@example.com" value={form.email} onChange={set('email')} required />
+            <input type="email" value={form.email} onChange={set('email')} required />
           </div>
           <div className="form-group">
             <label>Mật khẩu <span className="required">*</span></label>
             <div className="input-pwd-wrap">
-              <input type={showPwd ? 'text' : 'password'} placeholder="Tối thiểu 6 ký tự" value={form.password} onChange={set('password')} required />
+              <input type={showPwd ? 'text' : 'password'} value={form.password} onChange={set('password')} required />
               <button type="button" className="pwd-toggle" onClick={() => setShowPwd(v => !v)}>
                 {showPwd ? <IcEyeOff size={16}/> : <IcEye size={16}/>}
               </button>
@@ -67,7 +67,7 @@ export default function Register({ onSwitch }) {
           <div className="form-group">
             <label>Xác nhận mật khẩu <span className="required">*</span></label>
             <div className="input-pwd-wrap">
-              <input type={showPwd2 ? 'text' : 'password'} placeholder="Nhập lại mật khẩu" value={form.password2} onChange={set('password2')} required />
+              <input type={showPwd2 ? 'text' : 'password'} value={form.password2} onChange={set('password2')} required />
               <button type="button" className="pwd-toggle" onClick={() => setShowPwd2(v => !v)}>
                 {showPwd2 ? <IcEyeOff size={16}/> : <IcEye size={16}/>}
               </button>

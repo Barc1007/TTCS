@@ -77,17 +77,17 @@ export default function TamTru() {
           </div>
           <div className="form-group">
             <label>Địa chỉ tạm trú <span className="required">*</span></label>
-            <input type="text" placeholder="Phòng 302, Tòa A, Chung cư XYZ"
+            <input type="text"
               value={form.address} onChange={set('address')} />
           </div>
           <div className="form-group">
             <label>Lý do tạm trú</label>
-            <textarea rows={3} placeholder="Làm việc tại TP.HCM..."
+            <textarea rows={3}
               value={form.reason} onChange={set('reason')} />
           </div>
           <div className="form-group">
             <label>Số điện thoại liên hệ <span className="required">*</span></label>
-            <input type="tel" placeholder="0901234567"
+            <input type="tel"
               value={form.phone} onChange={set('phone')} />
           </div>
         </div>

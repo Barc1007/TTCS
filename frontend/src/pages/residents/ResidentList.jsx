@@ -43,7 +43,6 @@ export default function ResidentList() {
       <div className="card">
         <div className="search-bar">
           <input className="search-input" type="text"
-            placeholder="Tìm theo họ tên hoặc CCCD..."
             value={query} onChange={e => setQuery(e.target.value)} />
           <select className="select-input" value={filter} onChange={e => setFilter(e.target.value)}>
             <option value="">Tất cả trạng thái</option>

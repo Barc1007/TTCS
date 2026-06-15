@@ -100,11 +100,11 @@ export default function ResidentAdd() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Họ và tên <span className="required">*</span></label>
-                  <input type="text" placeholder="Nguyễn Văn A" value={form.name} onChange={set('name')} />
+                  <input type="text" value={form.name} onChange={set('name')} />
                 </div>
                 <div className="form-group">
                   <label>CCCD / CMT <span className="required">*</span></label>
-                  <input type="text" placeholder="001234567890" value={form.cccd} onChange={set('cccd')} />
+                  <input type="text" value={form.cccd} onChange={set('cccd')} />
                 </div>
               </div>
               <div className="form-row">
@@ -116,27 +116,27 @@ export default function ResidentAdd() {
                   <label>Giới tính <span className="required">*</span></label>
                   <select value={form.gender} onChange={set('gender')}>
                     <option value="">-- Chọn --</option>
-                    <option>Nam</option><option>Nữ</option><option>Khác</option>
+                    <option>Nam</option><option>Nữ</option>
                   </select>
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Dân tộc</label>
-                  <input type="text" placeholder="Kinh" value={form.ethnic} onChange={set('ethnic')} />
+                  <input type="text" value={form.ethnic} onChange={set('ethnic')} />
                 </div>
                 <div className="form-group">
                   <label>Tôn giáo</label>
-                  <input type="text" placeholder="Không" value={form.religion} onChange={set('religion')} />
+                  <input type="text" value={form.religion} onChange={set('religion')} />
                 </div>
               </div>
               <div className="form-group">
                 <label>Nghề nghiệp</label>
-                <input type="text" placeholder="Kỹ sư phần mềm" value={form.job} onChange={set('job')} />
+                <input type="text" value={form.job} onChange={set('job')} />
               </div>
               <div className="form-group">
                 <label>Email <span style={{fontSize:12,color:'#888'}}>(dùng để khôi phục mật khẩu)</span></label>
-                <input type="email" placeholder="example@gmail.com" value={form.email} onChange={set('email')} />
+                <input type="email" value={form.email} onChange={set('email')} />
               </div>
 
             </div>
@@ -149,7 +149,7 @@ export default function ResidentAdd() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Số phòng <span className="required">*</span></label>
-                  <input type="text" placeholder="101" value={form.room} onChange={set('room')} />
+                  <input type="text" value={form.room} onChange={set('room')} />
                 </div>
                 <div className="form-group">
                   <label>Trạng thái <span className="required">*</span></label>
@@ -161,7 +161,7 @@ export default function ResidentAdd() {
               </div>
               <div className="form-group">
                 <label>Địa chỉ thường trú</label>
-                <textarea placeholder="123 Đường ABC, Quận 1, TP.HCM" rows={3} value={form.address} onChange={set('address')} />
+                <textarea rows={3} value={form.address} onChange={set('address')} />
               </div>
               <div className="form-group">
                 <label>Quan hệ với chủ hộ</label>

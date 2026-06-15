@@ -1,4 +1,4 @@
-import { IcBarChart, IcDownload, IcMail } from '../../components/ui/Icons';
+import { IcBarChart, IcDownload } from '../../components/ui/Icons';
 // Reports page: Thống kê và xuất báo cáo
 import { useState, useEffect, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
@@ -72,6 +72,25 @@ export default function Reports() {
     return () => { chartInst.current?.destroy(); };
   }, [reportType, period, stats, thuongtru, tamtru, tamvang]);
 
+  const handleExportPDF = async () => {
+    try {
+      showToast('Đang tạo file PDF...');
+      const blob = await api.getBlob(`/residents/export/pdf?type=${reportType}&period=${encodeURIComponent(period)}`);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanPeriod = period.replace(/[\/\s]+/g, '_');
+      a.download = `Bao_Cao_${reportType}_${cleanPeriod}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast('Đã xuất file PDF thành công!');
+    } catch (error) {
+      showToast(error.message || 'Lỗi xuất file PDF', 'error');
+    }
+  };
+
   const summaryStats = [
     { value: total,     label: 'Tổng dân số' },
     { value: thuongtru, label: 'Thường trú' },
@@ -124,9 +143,7 @@ export default function Reports() {
         <div className="card-header">
           <h3>{REPORT_TITLES[reportType]} – {period}</h3>
           <div className="btn-group">
-            <button className="btn-outline" onClick={() => showToast('Đã xuất file PDF thành công!')}><IcDownload size={14}/> Xuất PDF</button>
-            <button className="btn-outline" onClick={() => showToast('Đã xuất file Excel thành công!')}><IcDownload size={14}/> Xuất Excel</button>
-            <button className="btn-secondary" onClick={() => showToast('Đã gửi báo cáo đến cơ quan địa phương!')}><IcMail size={14}/> Gửi Báo Cáo</button>
+            <button className="btn-outline" onClick={handleExportPDF}><IcDownload size={14}/> Xuất PDF</button>
           </div>
         </div>
 

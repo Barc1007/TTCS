@@ -82,7 +82,7 @@ export default function ForgotPassword({ onSwitch }) {
             <div className="form-group">
               <label>Email đã đăng ký <span className="required">*</span></label>
               <input
-                type="email" placeholder="example@gmail.com"
+                type="email"
                 value={email} onChange={e => setEmail(e.target.value)} required
               />
             </div>
@@ -103,7 +103,7 @@ export default function ForgotPassword({ onSwitch }) {
             <div className="form-group">
               <label>Mã OTP (6 chữ số)</label>
               <input
-                type="text" placeholder="______" maxLength={6}
+                type="text" maxLength={6}
                 value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g,''))}
                 required style={{ letterSpacing:8, fontSize:22, textAlign:'center' }}
               />
@@ -126,7 +126,7 @@ export default function ForgotPassword({ onSwitch }) {
               <label>Mật khẩu mới <span className="required">*</span></label>
               <div className="input-pwd-wrap">
                 <input
-                  type={showP ? 'text' : 'password'} placeholder="Tối thiểu 8 ký tự"
+                  type={showP ? 'text' : 'password'}
                   value={newPass} onChange={e => setNewPass(e.target.value)} required
                 />
                 <button type="button" className="pwd-toggle" onClick={() => setShowP(v => !v)}>
@@ -138,7 +138,7 @@ export default function ForgotPassword({ onSwitch }) {
               <label>Xác nhận mật khẩu <span className="required">*</span></label>
               <div className="input-pwd-wrap">
                 <input
-                  type={showP2 ? 'text' : 'password'} placeholder="Nhập lại"
+                  type={showP2 ? 'text' : 'password'}
                   value={newPass2} onChange={e => setNewPass2(e.target.value)} required
                 />
                 <button type="button" className="pwd-toggle" onClick={() => setShowP2(v => !v)}>

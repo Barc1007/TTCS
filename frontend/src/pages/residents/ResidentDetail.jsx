@@ -14,6 +14,7 @@ const PERSONAL_FIELDS = [
   ['Dân tộc',     'ethnic'],
   ['Tôn giáo',    'religion'],
   ['Nghề nghiệp', 'job'],
+  ['Email',       'email'],
 ];
 const RESIDENCE_FIELDS = [
   ['Số phòng',         'room'],
@@ -57,10 +58,19 @@ function FieldEdit({ label, fieldKey, value, onChange }) {
       </div>
     );
   }
-  const type = (fieldKey === 'dob' || fieldKey === 'regdate') ? 'date' : 'text';
+  const type = (fieldKey === 'dob' || fieldKey === 'regdate') ? 'date'
+             : fieldKey === 'email' ? 'email'
+             : 'text';
   return (
     <div className="detail-field">
-      <div className="detail-label">{label}</div>
+      <div className="detail-label">
+        {label}
+        {fieldKey === 'email' && (
+          <span style={{ fontSize: 11, color: '#888', fontWeight: 400, marginLeft: 6 }}>
+            (dùng để nhận OTP quên mật khẩu)
+          </span>
+        )}
+      </div>
       <input className="detail-input" type={type}
         value={value || ''}
         onChange={e => onChange(fieldKey, e.target.value)} />
@@ -96,6 +106,11 @@ export default function ResidentDetail() {
   const handleChange = (k, v) => { setEdits(e => ({ ...e, [k]: v })); setSaveError(''); };
   const handleSave = async () => {
     setSaveError('');
+    // Validate email định dạng nếu có nhập
+    if (edits.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(edits.email)) {
+      setSaveError('Email không đúng định dạng!');
+      return;
+    }
     // Kiểm tra Chủ hộ trùng phòng (frontend guard)
     if (edits.relation === 'Chủ hộ') {
       const conflict = residents.find(

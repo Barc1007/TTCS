@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
     residentId:         { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', default: null },
     // Bắt buộc đổi mật khẩu lần đầu đăng nhập (áp dụng cho cư dân mới)
     mustChangePassword: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -2,6 +2,7 @@ import Resident from '../models/Resident.js';
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import { generateResidentsPDF } from '../services/pdf.service.js';
 
 function addHistory(resident, action, by = 'Hệ thống') {
   resident.history.push({ action, by, at: new Date() });
@@ -9,7 +10,7 @@ function addHistory(resident, action, by = 'Hệ thống') {
 
 export async function getResidentStats(_req, res) {
   // Thống kê tổng hợp
-  const allResidents = await Resident.find({}, 'status createdAt history name');
+  const allResidents = await Resident.find({ isDeleted: { $ne: true } }, 'status createdAt history name');
 
   const total     = allResidents.length;
   const thuongtru = allResidents.filter(r => r.status === 'Thường trú').length;
@@ -55,12 +56,12 @@ export async function getResidentStats(_req, res) {
 }
 
 export async function listResidents(_req, res) {
-  const residents = await Resident.find().sort({ createdAt: -1 });
+  const residents = await Resident.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
   res.json({ residents });
 }
 
 export async function getResidentById(req, res) {
-  const resident = await Resident.findById(req.params.id);
+  const resident = await Resident.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
   }
@@ -97,7 +98,7 @@ export async function createResident(req, res) {
 
   // Kiểm tra Chủ hộ: mỗi phòng chỉ được có 1 người là Chủ hộ
   if (!relation || relation === 'Chủ hộ') {
-    const existingChuHo = await Resident.findOne({ room, relation: 'Chủ hộ' });
+    const existingChuHo = await Resident.findOne({ room, relation: 'Chủ hộ', isDeleted: { $ne: true } });
     if (existingChuHo) {
       return res.status(409).json({
         message: `Phòng ${room} đã có Chủ hộ (${existingChuHo.name}). Mỗi phòng chỉ được có 1 Chủ hộ.`,
@@ -116,6 +117,7 @@ export async function createResident(req, res) {
     ethnic: ethnic || 'Kinh',
     religion: religion || 'Không',
     job: job || '',
+    email: email && email.includes('@') ? email.toLowerCase() : '',
     relation: relation || 'Chủ hộ',
     regdate,
     tamTru: status === 'Tạm trú' ? { address: address || '', start: regdate, end: tamTruEnd, reason: '', phone: '' } : null,
@@ -152,7 +154,7 @@ export async function createResident(req, res) {
 }
 
 export async function updateResident(req, res) {
-  const resident = await Resident.findById(req.params.id);
+  const resident = await Resident.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
   }
@@ -164,12 +166,33 @@ export async function updateResident(req, res) {
     const existingChuHo = await Resident.findOne({
       room: newRoom,
       relation: 'Chủ hộ',
+      isDeleted: { $ne: true },
       _id: { $ne: resident._id },   // loại trừ chính cư dân này
     });
     if (existingChuHo) {
       return res.status(409).json({
         message: `Phòng ${newRoom} đã có Chủ hộ (${existingChuHo.name}). Mỗi phòng chỉ được có 1 Chủ hộ.`,
       });
+    }
+  }
+
+  // Nếu có cập nhật email → đồng bộ sang User và kiểm tra trùng
+  if (req.body.email !== undefined) {
+    const newEmail = req.body.email && req.body.email.includes('@')
+      ? req.body.email.toLowerCase()
+      : null;
+
+    if (newEmail) {
+      // Kiểm tra email đã được dùng bởi user khác chưa
+      const existingUser = await User.findOne({
+        email: newEmail,
+        residentId: { $ne: resident._id },
+      });
+      if (existingUser) {
+        return res.status(409).json({ message: 'Email này đã được sử dụng bởi tài khoản khác' });
+      }
+      // Cập nhật email trong User document
+      await User.findOneAndUpdate({ residentId: resident._id }, { email: newEmail });
     }
   }
 
@@ -181,7 +204,7 @@ export async function updateResident(req, res) {
 }
 
 export async function deleteResident(req, res) {
-  const resident = await Resident.findById(req.params.id);
+  const resident = await Resident.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
   }
@@ -194,15 +217,19 @@ export async function deleteResident(req, res) {
     return res.status(409).json({ message: 'Không thể xóa cư dân đang trong thời gian tạm vắng' });
   }
 
-  // Xóa tài khoản User liên kết (nếu có)
-  await User.deleteOne({ residentId: resident._id });
-  await resident.deleteOne();
+  // Soft delete tài khoản User liên kết (nếu có)
+  await User.findOneAndUpdate({ residentId: resident._id }, { isDeleted: true });
+
+  // Soft delete cư dân
+  resident.isDeleted = true;
+  addHistory(resident, 'Xóa cư dân (Soft Delete)', req.user?.name || 'Hệ thống');
+  await resident.save();
 
   res.json({ message: 'Xóa cư dân thành công' });
 }
 
 export async function registerTamTru(req, res) {
-  const resident = await Resident.findById(req.params.id);
+  const resident = await Resident.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
   }
@@ -230,7 +257,7 @@ export async function registerTamTru(req, res) {
 }
 
 export async function registerTamVang(req, res) {
-  const resident = await Resident.findById(req.params.id);
+  const resident = await Resident.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
   }
@@ -263,10 +290,86 @@ export async function getMyResidentInfo(req, res) {
     return res.status(404).json({ message: 'Tài khoản này chưa liên kết với hồ sơ cư dân nào' });
   }
 
-  const resident = await Resident.findById(req.user.residentId);
+  const resident = await Resident.findOne({ _id: req.user.residentId, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Hồ sơ cư dân không tồn tại' });
   }
 
   res.json({ resident });
+}
+
+function parsePeriod(periodStr) {
+  let startDate = null;
+  let endDate = null;
+
+  if (!periodStr) return { startDate, endDate };
+
+  const monthMatch = periodStr.match(/Tháng\s+(\d+)\/(\d+)/i);
+  if (monthMatch) {
+    const month = parseInt(monthMatch[1]) - 1; // 0-indexed
+    const year = parseInt(monthMatch[2]);
+    startDate = new Date(year, month, 1);
+    endDate = new Date(year, month + 1, 0, 23, 59, 59, 999);
+  } else {
+    const quýMatch = periodStr.match(/Quý\s+(\d+)\/(\d+)/i);
+    if (quýMatch) {
+      const quý = parseInt(quýMatch[1]);
+      const year = parseInt(quýMatch[2]);
+      const startMonth = (quý - 1) * 3;
+      startDate = new Date(year, startMonth, 1);
+      endDate = new Date(year, startMonth + 3, 0, 23, 59, 59, 999);
+    }
+  }
+  return { startDate, endDate };
+}
+
+export async function exportResidentsPDF(req, res) {
+  try {
+    const { type = 'tonghop', period = 'Tháng 5/2026' } = req.query;
+
+    const { startDate, endDate } = parsePeriod(period);
+
+    // Lấy thống kê
+    const allResidents = await Resident.find({ isDeleted: { $ne: true } });
+    const total = allResidents.length;
+    const thuongtru = allResidents.filter(r => r.status === 'Thường trú').length;
+    const tamtru = allResidents.filter(r => r.status === 'Tạm trú').length;
+    const tamvang = allResidents.filter(r => r.status === 'Tạm vắng').length;
+    const stats = { total, thuongtru, tamtru, tamvang };
+
+    let data = [];
+    if (type === 'tonghop') {
+      data = await Resident.find({ isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+    } else if (type === 'tamtru') {
+      data = await Resident.find({ status: 'Tạm trú', isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+    } else if (type === 'tamvang') {
+      data = await Resident.find({ status: 'Tạm vắng', isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+    } else if (type === 'biendong') {
+      for (const r of allResidents) {
+        for (const h of r.history || []) {
+          const hDate = new Date(h.at);
+          if ((!startDate || hDate >= startDate) && (!endDate || hDate <= endDate)) {
+            data.push({
+              name: r.name,
+              cccd: r.cccd,
+              room: r.room,
+              action: h.action,
+              date: hDate.toLocaleDateString('vi-VN'),
+              rawDate: hDate,
+            });
+          }
+        }
+      }
+      data.sort((a, b) => b.rawDate - a.rawDate);
+    }
+
+    const pdfBuffer = await generateResidentsPDF(type, period, data, stats);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Bao_Cao_${type}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    res.status(500).json({ message: 'Lỗi xuất báo cáo PDF' });
+  }
 }

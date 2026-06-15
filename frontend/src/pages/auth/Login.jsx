@@ -85,7 +85,6 @@ export default function Login({ onSwitch }) {
                 <input
                   type="text"
                   className="auth-input"
-                  placeholder="admin hoặc email@..."
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   autoComplete="username"
@@ -102,7 +101,6 @@ export default function Login({ onSwitch }) {
                 <input
                   type={showPwd ? 'text' : 'password'}
                   className="auth-input"
-                  placeholder="••••••••"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="current-password"
