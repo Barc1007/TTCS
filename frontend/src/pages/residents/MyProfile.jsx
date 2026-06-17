@@ -135,14 +135,15 @@ export default function MyProfile() {
         </SectionCard>
       )}
 
-      {/* Tạm vắng (chỉ hiện nếu đang tạm vắng) */}
-      {resident?.status === 'Tạm vắng' && resident?.tamVang && (
+      {/* Tạm vắng */}
+      {resident?.tamVang && resident?.tamVang?.start && (
         <SectionCard icon={IcPlane} title="Thông Tin Tạm Vắng">
-          <div style={{
-            background: '#fff1f2', border: '1px solid #fecdd3',
-            borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#9f1239',
-          }}>
-            Bạn đang trong thời gian tạm vắng.
+          <div className="alert-box" style={{ background: 'var(--orange-soft)', color: 'var(--orange)', marginBottom: 16 }}>
+            {resident.tamVang.end < new Date().toISOString().split('T')[0] 
+              ? 'Lịch trình tạm vắng đã hoàn thành.' 
+              : resident.tamVang.start > new Date().toISOString().split('T')[0] 
+                ? 'Bạn có một lịch trình tạm vắng sắp tới.' 
+                : 'Bạn đang trong thời gian tạm vắng.'}
           </div>
           <InfoRow label="Nơi đến"       value={resident.tamVang.destination} />
           <InfoRow label="Từ ngày"       value={formatDate(resident.tamVang.start)} />

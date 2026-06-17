@@ -191,14 +191,16 @@ export default function ResidentDetail() {
       </div>
 
       {/* Phiếu Tạm Trú (nếu có) */}
-      {resident.status === 'Tạm trú' && resident.tamTru && (
+      {resident.tamTru && resident.tamTru.start && (
         <div className="card mt-16" style={{ borderLeft: '4px solid var(--primary)' }}>
           <div className="card-header" style={{ background: 'var(--primary-soft)' }}>
             <div>
               <h3 style={{ color: 'var(--primary)' }}>📋 Phiếu Đăng Ký Tạm Trú</h3>
               <p>Thông tin đăng ký tạm trú hiện tại của cư dân</p>
             </div>
-            <span className="badge badge-blue">Đang tạm trú</span>
+            <span className="badge badge-blue">
+              {resident.tamTru.end < new Date().toISOString().split('T')[0] ? 'Đã hết hạn' : resident.tamTru.start > new Date().toISOString().split('T')[0] ? 'Chưa tới ngày' : 'Đang tạm trú'}
+            </span>
           </div>
           <div className="form-body">
             <div className="form-grid-2">
@@ -232,14 +234,16 @@ export default function ResidentDetail() {
       )}
 
       {/* Phiếu Tạm Vắng (nếu có) */}
-      {resident.status === 'Tạm vắng' && resident.tamVang && (
+      {resident.tamVang && resident.tamVang.start && (
         <div className="card mt-16" style={{ borderLeft: '4px solid var(--orange)' }}>
           <div className="card-header" style={{ background: 'var(--orange-soft)' }}>
             <div>
               <h3 style={{ color: 'var(--orange)' }}>✈️ Phiếu Đăng Ký Tạm Vắng</h3>
               <p>Thông tin đăng ký tạm vắng hiện tại của cư dân</p>
             </div>
-            <span className="badge" style={{ background: 'var(--orange-soft)', color: 'var(--orange)', border: '1px solid var(--orange)' }}>Đang tạm vắng</span>
+            <span className="badge" style={{ background: 'var(--orange-soft)', color: 'var(--orange)', border: '1px solid var(--orange)' }}>
+              {resident.tamVang.end < new Date().toISOString().split('T')[0] ? 'Đã hoàn thành' : resident.tamVang.start > new Date().toISOString().split('T')[0] ? 'Sắp đi' : 'Đang tạm vắng'}
+            </span>
           </div>
           <div className="form-body">
             <div className="form-grid-2">

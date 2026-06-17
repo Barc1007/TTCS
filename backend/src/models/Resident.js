@@ -40,6 +40,7 @@ const residentSchema = new mongoose.Schema(
     tamVang: { type: temporarySchema, default: null },
     history: { type: [historySchema], default: [] },
     isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
