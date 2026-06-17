@@ -8,9 +8,21 @@ function addHistory(resident, action, by = 'Hệ thống') {
   resident.history.push({ action, by, at: new Date() });
 }
 
+async function autoSoftDeleteExpired() {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const expired = await Resident.find({ status: 'Tạm trú', isDeleted: { $ne: true }, 'tamTru.end': { $lt: todayStr } }, '_id');
+  if (expired.length > 0) {
+    const ids = expired.map(r => r._id);
+    await Resident.updateMany({ _id: { $in: ids } }, { $set: { isDeleted: true } });
+    await User.updateMany({ residentId: { $in: ids } }, { $set: { isDeleted: true } });
+  }
+}
+
 export async function getResidentStats(_req, res) {
+  await autoSoftDeleteExpired();
+
   // Thống kê tổng hợp
-  const allResidents = await Resident.find({ isDeleted: { $ne: true } }, 'status createdAt history name');
+  const allResidents = await Resident.find({ isDeleted: { $ne: true } }, 'status createdAt regdate history name');
 
   const total     = allResidents.length;
   const thuongtru = allResidents.filter(r => r.status === 'Thường trú').length;
@@ -25,8 +37,16 @@ export async function getResidentStats(_req, res) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
     const label = `Th.${d.getMonth() + 1}`;
-    const count = allResidents.filter(r => new Date(r.createdAt) <= endOfMonth).length;
-    monthlyStats.push({ label, count });
+    const residentsAtTime = allResidents.filter(r => {
+      const dateToCompare = r.regdate ? new Date(r.regdate) : new Date(r.createdAt);
+      return dateToCompare <= endOfMonth;
+    });
+    const count = residentsAtTime.length;
+    const thuongtruCount = residentsAtTime.filter(r => r.status === 'Thường trú').length;
+    const tamtruCount = residentsAtTime.filter(r => r.status === 'Tạm trú').length;
+    const tamvangCount = residentsAtTime.filter(r => r.status === 'Tạm vắng').length;
+    const khongoCount = residentsAtTime.filter(r => r.status === 'Không ở').length;
+    monthlyStats.push({ label, count, thuongtru: thuongtruCount, tamtru: tamtruCount, tamvang: tamvangCount, khongo: khongoCount });
   }
 
   // Lịch sử hoạt động gần đây (gộp tất cả history từ residents, lấy 10 mục mới nhất)
@@ -56,6 +76,8 @@ export async function getResidentStats(_req, res) {
 }
 
 export async function listResidents(_req, res) {
+  await autoSoftDeleteExpired();
+
   const residents = await Resident.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
   res.json({ residents });
 }
@@ -122,6 +144,7 @@ export async function createResident(req, res) {
     regdate,
     tamTru: status === 'Tạm trú' ? { address: address || '', start: regdate, end: tamTruEnd, reason: '', phone: '' } : null,
     history: [{ action: 'Thêm mới cư dân', by: req.user?.name || 'Hệ thống', at: new Date() }],
+    isDeleted: (status === 'Tạm trú' && tamTruEnd < new Date().toISOString().split('T')[0]) ? true : false,
   });
 
   const defaultPassword = cccd.slice(-8);           // 8 số cuối CCCD là mật khẩu mặc định
@@ -147,6 +170,7 @@ export async function createResident(req, res) {
     role:               'resident',
     residentId:         resident._id,
     mustChangePassword: true,
+    isDeleted:          resident.isDeleted,
   });
 
 
@@ -197,6 +221,10 @@ export async function updateResident(req, res) {
   }
 
   Object.assign(resident, req.body);
+  if (resident.status === 'Tạm trú' && resident.tamTru?.end && resident.tamTru.end < new Date().toISOString().split('T')[0]) {
+    resident.isDeleted = true;
+    await User.findOneAndUpdate({ residentId: resident._id }, { isDeleted: true });
+  }
   addHistory(resident, 'Cập nhật thông tin cư dân', req.user?.name || 'Hệ thống');
   await resident.save();
 
@@ -250,6 +278,10 @@ export async function registerTamTru(req, res) {
 
   resident.status = 'Tạm trú';
   resident.tamTru = { address, start, end, reason: reason || '', phone };
+  if (end < new Date().toISOString().split('T')[0]) {
+    resident.isDeleted = true;
+    await User.findOneAndUpdate({ residentId: resident._id }, { isDeleted: true });
+  }
   addHistory(resident, 'Đăng ký tạm trú', req.user?.name || 'Hệ thống');
   await resident.save();
 
@@ -331,19 +363,26 @@ export async function exportResidentsPDF(req, res) {
 
     // Lấy thống kê
     const allResidents = await Resident.find({ isDeleted: { $ne: true } });
-    const total = allResidents.length;
-    const thuongtru = allResidents.filter(r => r.status === 'Thường trú').length;
-    const tamtru = allResidents.filter(r => r.status === 'Tạm trú').length;
-    const tamvang = allResidents.filter(r => r.status === 'Tạm vắng').length;
+    
+    // Lọc ra những cư dân được tạo trước hoặc trong kỳ báo cáo
+    const validResidents = allResidents.filter(r => {
+      const dateToCompare = r.regdate ? new Date(r.regdate) : new Date(r.createdAt);
+      return endDate ? dateToCompare <= endDate : true;
+    });
+
+    const total = validResidents.length;
+    const thuongtru = validResidents.filter(r => r.status === 'Thường trú').length;
+    const tamtru = validResidents.filter(r => r.status === 'Tạm trú').length;
+    const tamvang = validResidents.filter(r => r.status === 'Tạm vắng').length;
     const stats = { total, thuongtru, tamtru, tamvang };
 
     let data = [];
     if (type === 'tonghop') {
-      data = await Resident.find({ isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+      data = validResidents.sort((a,b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
     } else if (type === 'tamtru') {
-      data = await Resident.find({ status: 'Tạm trú', isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+      data = validResidents.filter(r => r.status === 'Tạm trú').sort((a,b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
     } else if (type === 'tamvang') {
-      data = await Resident.find({ status: 'Tạm vắng', isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+      data = validResidents.filter(r => r.status === 'Tạm vắng').sort((a,b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
     } else if (type === 'biendong') {
       for (const r of allResidents) {
         for (const h of r.history || []) {

@@ -113,11 +113,11 @@ export async function generateResidentsPDF(reportType, period, data, stats) {
     doc.registerFont('Roboto-Bold', fontPaths.bold);
 
     // 1. Header (Quốc hiệu tiêu ngữ)
-    doc.font('Roboto-Bold').fontSize(10).fillColor('#1a3c5e').text('HỆ THỐNG QUẢN LÝ DÂN CƯ RESIDENTIQ', 50, 45);
-    doc.font('Roboto-Regular').fontSize(9).fillColor('#666666').text('Ban Quản Lý Khu Dân Cư / Chung Cư', 50, 58);
+    doc.font('Roboto-Bold').fontSize(10).fillColor('#000000').text('HỆ THỐNG QUẢN LÝ DÂN CƯ RESIDENTIQ', 50, 45);
+    doc.font('Roboto-Regular').fontSize(9).fillColor('#000000').text('Ban Quản Lý Khu Dân Cư / Chung Cư', 50, 58);
 
-    doc.font('Roboto-Bold').fontSize(10).fillColor('#1a3c5e').text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', 340, 45, { align: 'center', width: 205 });
-    doc.font('Roboto-Bold').fontSize(9).fillColor('#1a3c5e').text('Độc lập - Tự do - Hạnh phúc', 340, 58, { align: 'center', width: 205 });
+    doc.font('Roboto-Bold').fontSize(10).fillColor('#000000').text('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', 340, 45, { align: 'center', width: 205 });
+    doc.font('Roboto-Bold').fontSize(9).fillColor('#000000').text('Độc lập - Tự do - Hạnh phúc', 340, 58, { align: 'center', width: 205 });
     doc.strokeColor('#cccccc').lineWidth(0.5).moveTo(385, 72).lineTo(500, 72).stroke();
 
     // 2. Report Title
@@ -127,38 +127,38 @@ export async function generateResidentsPDF(reportType, period, data, stats) {
     else if (reportType === 'tamvang') title = 'BÁO CÁO CƯ DÂN TẠM VẮNG';
     else if (reportType === 'biendong') title = 'BÁO CÁO BIẾN ĐỘNG DÂN SỐ';
 
-    doc.font('Roboto-Bold').fontSize(16).fillColor('#1a3c5e').text(title, 50, 100, { align: 'center' });
-    doc.font('Roboto-Regular').fontSize(10).fillColor('#555555').text(`Kỳ báo cáo: ${period}`, 50, 120, { align: 'center' });
+    doc.font('Roboto-Bold').fontSize(16).fillColor('#000000').text(title, 50, 100, { align: 'center' });
+    doc.font('Roboto-Regular').fontSize(10).fillColor('#000000').text(`Kỳ báo cáo: ${period}`, 50, 120, { align: 'center' });
 
     // 3. Stats Card Box
     doc.fillColor('#f8fafc').strokeColor('#e2e8f0').lineWidth(1)
        .roundedRect(50, 145, 495, 50, 4)
        .fillAndStroke();
 
-    doc.fillColor('#1a3c5e').font('Roboto-Bold').fontSize(9);
+    doc.fillColor('#000000').font('Roboto-Bold').fontSize(9);
     if (reportType === 'tonghop') {
       doc.text('TỔNG DÂN SỐ', 65, 157, { width: 100, align: 'center' });
       doc.text('THƯỜNG TRÚ', 185, 157, { width: 100, align: 'center' });
       doc.text('TẠM TRÚ', 305, 157, { width: 100, align: 'center' });
       doc.text('TẠM VẮNG', 425, 157, { width: 100, align: 'center' });
 
-      doc.fillColor('#2d3250').font('Roboto-Bold').fontSize(14);
+      doc.fillColor('#000000').font('Roboto-Bold').fontSize(14);
       doc.text(String(stats.total || 0), 65, 172, { width: 100, align: 'center' });
       doc.text(String(stats.thuongtru || 0), 185, 172, { width: 100, align: 'center' });
       doc.text(String(stats.tamtru || 0), 305, 172, { width: 100, align: 'center' });
       doc.text(String(stats.tamvang || 0), 425, 172, { width: 100, align: 'center' });
     } else if (reportType === 'tamtru') {
       doc.text('TỔNG SỐ TẠM TRÚ TRONG KỲ', 200, 157, { width: 200, align: 'center' });
-      doc.fillColor('#2d3250').font('Roboto-Bold').fontSize(14);
+      doc.fillColor('#000000').font('Roboto-Bold').fontSize(14);
       doc.text(String(data.length), 200, 172, { width: 200, align: 'center' });
     } else if (reportType === 'tamvang') {
       doc.text('TỔNG SỐ TẠM VẮNG TRONG KỲ', 200, 157, { width: 200, align: 'center' });
-      doc.fillColor('#2d3250').font('Roboto-Bold').fontSize(14);
+      doc.fillColor('#000000').font('Roboto-Bold').fontSize(14);
       doc.text(String(data.length), 200, 172, { width: 200, align: 'center' });
     } else {
       // biendong
       doc.text('TỔNG SỐ LƯỢT BIẾN ĐỘNG', 200, 157, { width: 200, align: 'center' });
-      doc.fillColor('#2d3250').font('Roboto-Bold').fontSize(14);
+      doc.fillColor('#000000').font('Roboto-Bold').fontSize(14);
       doc.text(String(data.length), 200, 172, { width: 200, align: 'center' });
     }
 
@@ -213,7 +213,7 @@ export async function generateResidentsPDF(reportType, period, data, stats) {
       doc.font('Roboto-Bold').fontSize(9).fillColor('#ffffff');
       
       // Draw Header Background
-      doc.fillColor('#1a3c5e').rect(50, docY - 5, 495, 22).fill();
+      doc.fillColor('#000000').rect(50, docY - 5, 495, 22).fill();
       doc.fillColor('#ffffff');
 
       columns.forEach((col) => {
@@ -282,12 +282,12 @@ export async function generateResidentsPDF(reportType, period, data, stats) {
 
       // Draw Row
       let x = 50;
-      doc.font('Roboto-Regular').fontSize(8.5).fillColor('#2d3250');
+      doc.font('Roboto-Regular').fontSize(8.5).fillColor('#000000');
       
       // Draw alternating light blue backgrounds for readable tables
       if (index % 2 === 1) {
         doc.fillColor('#f4f7fa').rect(50, y - 4, 495, 18).fill();
-        doc.fillColor('#2d3250');
+        doc.fillColor('#000000');
       }
 
       columns.forEach((col, idx) => {
@@ -314,17 +314,17 @@ export async function generateResidentsPDF(reportType, period, data, stats) {
     y += 20;
     const today = new Date();
     const dateStr = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
-    doc.font('Roboto-Regular').fontSize(9).fillColor('#555555').text(dateStr, 320, y, { align: 'center', width: 225 });
+    doc.font('Roboto-Regular').fontSize(9).fillColor('#000000').text(dateStr, 320, y, { align: 'center', width: 225 });
     
     y += 15;
-    doc.font('Roboto-Bold').fontSize(10).fillColor('#1a3c5e').text('Người lập báo cáo', 320, y, { align: 'center', width: 225 });
-    doc.font('Roboto-Regular').fontSize(8.5).fillColor('#777777').text('(Ký và ghi rõ họ tên)', 320, y + 12, { align: 'center', width: 225 });
+    doc.font('Roboto-Bold').fontSize(10).fillColor('#000000').text('Người lập báo cáo', 320, y, { align: 'center', width: 225 });
+    doc.font('Roboto-Regular').fontSize(8.5).fillColor('#000000').text('(Ký và ghi rõ họ tên)', 320, y + 12, { align: 'center', width: 225 });
 
     // 6. Draw Page Numbers on all pages before ending
     const pages = doc.bufferedPageRange();
     for (let i = 0; i < pages.count; i++) {
       doc.switchToPage(i);
-      doc.font('Roboto-Regular').fontSize(8).fillColor('#8b92a9').text(
+      doc.font('Roboto-Regular').fontSize(8).fillColor('#000000').text(
         `Trang ${i + 1} / ${pages.count}`,
         50,
         800,

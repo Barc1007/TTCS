@@ -10,7 +10,8 @@ Chart.register(...registerables);
 export default function Reports() {
   const { residents, showToast, loading } = useResidents();
   const [reportType, setReportType] = useState('tonghop');
-  const [period,     setPeriod]     = useState('Tháng 5/2026');
+  const initialPeriod = `Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`;
+  const [period,     setPeriod]     = useState(initialPeriod);
   const [stats,      setStats]      = useState(null);
   const chartRef  = useRef(null);
   const chartInst = useRef(null);
@@ -47,14 +48,21 @@ export default function Reports() {
     const ctx = chartRef.current?.getContext('2d');
     if (!ctx) return;
 
+    const labels = stats?.monthlyStats?.map(m => m.label) ?? ['Th.12','Th.1','Th.2','Th.3','Th.4','Th.5'];
+    
+    // Extract actual monthly stats or fallback to 0
+    const thuongtruData = stats?.monthlyStats?.map(m => m.thuongtru) ?? [0,0,0,0,0,thuongtru];
+    const tamtruData = stats?.monthlyStats?.map(m => m.tamtru) ?? [0,0,0,0,0,tamtru];
+    const tamvangData = stats?.monthlyStats?.map(m => m.tamvang) ?? [0,0,0,0,0,tamvang];
+
     chartInst.current = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: stats?.monthlyStats?.map(m => m.label) ?? ['Th.12','Th.1','Th.2','Th.3','Th.4','Th.5'],
+        labels: labels,
         datasets: [
-          { label: 'Thường trú', data: stats?.monthlyStats?.map(m => m.count) ?? [0,0,0,0,0,thuongtru], backgroundColor: '#22c47a', borderRadius: 4 },
-          { label: 'Tạm trú',    data: Array(6).fill(0).map((_, i) => i === 5 ? tamtru : 0),   backgroundColor: '#f5a623', borderRadius: 4 },
-          { label: 'Tạm vắng',  data: Array(6).fill(0).map((_, i) => i === 5 ? tamvang : 0),  backgroundColor: '#f05b5b', borderRadius: 4 },
+          { label: 'Thường trú', data: thuongtruData, backgroundColor: '#22c47a', borderRadius: 4 },
+          { label: 'Tạm trú',    data: tamtruData,    backgroundColor: '#f5a623', borderRadius: 4 },
+          { label: 'Tạm vắng',   data: tamvangData,   backgroundColor: '#f05b5b', borderRadius: 4 },
         ],
       },
       options: {
@@ -71,6 +79,21 @@ export default function Reports() {
 
     return () => { chartInst.current?.destroy(); };
   }, [reportType, period, stats, thuongtru, tamtru, tamvang]);
+
+  // Generate dynamic periods for the last 6 months + Quarters
+  const dynamicPeriods = [];
+  const now = new Date();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    dynamicPeriods.push(`Tháng ${d.getMonth() + 1}/${d.getFullYear()}`);
+  }
+  const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+  dynamicPeriods.push(`Quý ${currentQuarter}/${now.getFullYear()}`);
+  if (currentQuarter > 1) {
+    dynamicPeriods.push(`Quý ${currentQuarter - 1}/${now.getFullYear()}`);
+  } else {
+    dynamicPeriods.push(`Quý 4/${now.getFullYear() - 1}`);
+  }
 
   const handleExportPDF = async () => {
     try {
@@ -128,23 +151,21 @@ export default function Reports() {
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label>Kỳ báo cáo</label>
             <select value={period} onChange={e => setPeriod(e.target.value)}>
-              <option>Tháng 5/2026</option>
-              <option>Tháng 4/2026</option>
-              <option>Tháng 3/2026</option>
-              <option>Quý 1/2026</option>
+              {dynamicPeriods.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
           </div>
-          <button className="btn-primary"><IcBarChart size={14}/> Tạo Báo Cáo</button>
+          <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '2px' }}>
+            <button className="btn-primary" onClick={handleExportPDF}><IcDownload size={14}/> Xuất PDF</button>
+          </div>
         </div>
       </div>
 
       {/* Kết quả báo cáo */}
       <div className="card mt-16">
         <div className="card-header">
-          <h3>{REPORT_TITLES[reportType]} – {period}</h3>
-          <div className="btn-group">
-            <button className="btn-outline" onClick={handleExportPDF}><IcDownload size={14}/> Xuất PDF</button>
-          </div>
+          <h3>{REPORT_TITLES[reportType]}</h3>
         </div>
 
         {/* Số liệu tóm tắt */}

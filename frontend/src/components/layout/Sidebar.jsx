@@ -14,6 +14,7 @@ const NAV_ITEMS_STAFF = [
   {
     section: 'Quản lý',
     items: [
+      { path: '/apartments',Icon: IcBuilding, label: 'Căn Hộ' },
       { path: '/residents', Icon: IcUsers, label: 'Cư Dân' },
       { path: '/tamtru',    Icon: IcHome,  label: 'Tạm Trú' },
       { path: '/tamvang',   Icon: IcPlane, label: 'Tạm Vắng' },
