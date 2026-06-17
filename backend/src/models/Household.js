@@ -7,6 +7,7 @@ const householdSchema = new mongoose.Schema(
     address: { type: String, required: true },
     headResidentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', default: null },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Resident' }],
+    memberCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

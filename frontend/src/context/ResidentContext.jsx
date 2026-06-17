@@ -9,6 +9,7 @@ export function ResidentProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState(null);
+  const [dataVersion, setDataVersion] = useState(0);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -24,6 +25,7 @@ export function ResidentProvider({ children }) {
       ]);
       setResidents(residentsData.residents || []);
       setHouseholds(householdsData.households || []);
+      setDataVersion((v) => v + 1);
     } catch (error) {
       showToast(`❌ ${error.message}`);
     } finally {
@@ -37,20 +39,14 @@ export function ResidentProvider({ children }) {
 
   const addResident = async (payload) => {
     const data = await api.post('/residents', payload);
-    if (!data.resident.isDeleted) {
-      setResidents((prev) => [data.resident, ...prev]);
-    }
+    await loadResidents();
     showToast(`✅ Đã thêm cư dân ${data.resident.name}`);
     return data.resident;
   };
 
   const updateResident = async (id, payload) => {
     const data = await api.put(`/residents/${id}`, payload);
-    if (data.resident.isDeleted) {
-      setResidents((prev) => prev.filter((r) => r._id !== id));
-    } else {
-      setResidents((prev) => prev.map((resident) => (resident._id === id ? data.resident : resident)));
-    }
+    await loadResidents();
     showToast('✅ Đã cập nhật thông tin');
     return data.resident;
   };
@@ -58,7 +54,7 @@ export function ResidentProvider({ children }) {
   const deleteResident = async (id) => {
     try {
       await api.delete(`/residents/${id}`);
-      setResidents((prev) => prev.filter((resident) => resident._id !== id));
+      await loadResidents();
       showToast('🗑️ Đã xóa cư dân thành công');
     } catch (error) {
       showToast(`❌ ${error.message || 'Không thể xóa cư dân'}`);
@@ -67,18 +63,14 @@ export function ResidentProvider({ children }) {
 
   const registerTamTru = async (id, payload) => {
     const data = await api.post(`/residents/${id}/tam-tru`, payload);
-    if (data.resident.isDeleted) {
-      setResidents((prev) => prev.filter((r) => r._id !== id));
-    } else {
-      setResidents((prev) => prev.map((resident) => (resident._id === id ? data.resident : resident)));
-    }
+    await loadResidents();
     showToast('✅ Đăng ký tạm trú thành công!');
     return data.resident;
   };
 
   const registerTamVang = async (id, payload) => {
     const data = await api.post(`/residents/${id}/tam-vang`, payload);
-    setResidents((prev) => prev.map((resident) => (resident._id === id ? data.resident : resident)));
+    await loadResidents();
     showToast('✅ Đăng ký tạm vắng thành công!');
     return data.resident;
   };
@@ -103,6 +95,7 @@ export function ResidentProvider({ children }) {
         openModal,
         closeModal,
         reloadResidents: loadResidents,
+        dataVersion,
       }}
     >
       {children}

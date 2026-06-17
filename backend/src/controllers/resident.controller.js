@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { generateResidentsPDF } from '../services/pdf.service.js';
+import { syncHouseholdFromResidents } from './household.controller.js';
 
 function addHistory(resident, action, by = 'Hệ thống') {
   resident.history.push({ action, by, at: new Date() });
@@ -223,6 +224,7 @@ export async function createResident(req, res) {
     isDeleted:          resident.isDeleted,
   });
 
+  await syncHouseholdFromResidents(room);
 
   res.status(201).json({ message: 'Thêm cư dân thành công', resident });
 }
@@ -254,6 +256,9 @@ export async function updateResident(req, res) {
     }
   }
 
+  const oldRoom = resident.room;
+  const oldStatus = resident.status;
+
   // Nếu có cập nhật email → đồng bộ sang User và kiểm tra trùng
   if (req.body.email !== undefined) {
     const newEmail = req.body.email && req.body.email.includes('@')
@@ -275,6 +280,25 @@ export async function updateResident(req, res) {
   }
 
   Object.assign(resident, req.body);
+
+  if (resident.status === 'Thường trú') {
+    resident.tamTru = null;
+    resident.tamVang = null;
+  }
+
+  if (resident.status === 'Không ở') {
+    resident.tamTru = null;
+    resident.tamVang = null;
+  }
+
+  if (resident.status === 'Tạm trú') {
+    resident.tamVang = null;
+  }
+
+  if (resident.status === 'Tạm vắng') {
+    resident.tamTru = null;
+  }
+
   if (resident.status === 'Tạm trú' && resident.tamTru?.end && resident.tamTru.end < new Date().toISOString().split('T')[0]) {
     resident.isDeleted = true;
     resident.deletedAt = new Date();
@@ -283,10 +307,23 @@ export async function updateResident(req, res) {
   // Cập nhật Tạm vắng nếu đã hết hạn
   if (resident.status === 'Tạm vắng' && resident.tamVang?.end && resident.tamVang.end < new Date().toISOString().split('T')[0]) {
     resident.status = 'Thường trú';
+    resident.tamVang = null;
   }
 
-  addHistory(resident, 'Cập nhật thông tin cư dân', req.user?.name || 'Hệ thống');
+  if (oldStatus !== resident.status) {
+    addHistory(
+      resident,
+      `Thay đổi trạng thái từ ${oldStatus} sang ${resident.status}`,
+      req.user?.name || 'Hệ thống'
+    );
+  } else {
+    addHistory(resident, 'Cập nhật thông tin cư dân', req.user?.name || 'Hệ thống');
+  }
   await resident.save();
+  await syncHouseholdFromResidents(oldRoom);
+  if (oldRoom !== resident.room) {
+    await syncHouseholdFromResidents(resident.room);
+  }
 
   res.json({ message: 'Cập nhật cư dân thành công', resident });
 }
@@ -305,6 +342,8 @@ export async function deleteResident(req, res) {
     return res.status(409).json({ message: 'Không thể xóa cư dân đang trong thời gian tạm vắng' });
   }
 
+  const room = resident.room;
+
   // Soft delete tài khoản User liên kết (nếu có)
   await User.findOneAndUpdate({ residentId: resident._id }, { isDeleted: true });
 
@@ -313,6 +352,7 @@ export async function deleteResident(req, res) {
   resident.deletedAt = new Date();
   addHistory(resident, 'Xóa cư dân (Soft Delete)', req.user?.name || 'Hệ thống');
   await resident.save();
+  await syncHouseholdFromResidents(room);
 
   res.json({ message: 'Xóa cư dân thành công' });
 }

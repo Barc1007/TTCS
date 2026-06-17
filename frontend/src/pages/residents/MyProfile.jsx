@@ -156,28 +156,40 @@ export default function MyProfile() {
       {resident?.history?.length > 0 && (
         <SectionCard icon={IcActivity} title="Lịch Sử Biến Động">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {[...resident.history].reverse().map((h, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 14,
-                padding: '12px 0',
-                borderBottom: i < resident.history.length - 1 ? '1px solid #f1f3f8' : 'none',
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                  background: '#f0f4ff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+             {[...resident.history].reverse().map((h, i) => {
+              const isSeed = /seed|Seeder/i.test(`${h.action} ${h.by}`);
+              const displayAction = isSeed ? 'dữ liệu được thêm bởi cán bộ quản lý' : h.action;
+              const displayBy = isSeed ? '' : h.by;
+              return (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 14,
+                  padding: '12px 0',
+                  borderBottom: i < resident.history.length - 1 ? '1px solid #f1f3f8' : 'none',
                 }}>
-                  <IcCalendar size={14} style={{ color: '#2d3250' }} />
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: '#f0f4ff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <IcCalendar size={14} style={{ color: '#2d3250' }} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#1e2a45', margin: '0 0 2px' }}>{displayAction}</p>
+                    {displayBy && (
+                      <p style={{ fontSize: 12, color: '#8b92a9', margin: 0 }}>
+                        Thực hiện bởi: <span style={{ color: '#2d3250' }}>{displayBy}</span>
+                        &nbsp;·&nbsp;
+                        {h.at ? new Date(h.at).toLocaleString('vi-VN') : ''}
+                      </p>
+                    )}
+                    {!displayBy && h.at && (
+                      <p style={{ fontSize: 12, color: '#8b92a9', margin: 0 }}>
+                        {new Date(h.at).toLocaleString('vi-VN')}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#1e2a45', margin: '0 0 2px' }}>{h.action}</p>
-                  <p style={{ fontSize: 12, color: '#8b92a9', margin: 0 }}>
-                    Thực hiện bởi: <span style={{ color: '#2d3250' }}>{h.by}</span>
-                    &nbsp;·&nbsp;
-                    {h.at ? new Date(h.at).toLocaleString('vi-VN') : ''}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </SectionCard>
       )}

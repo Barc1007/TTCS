@@ -5,14 +5,71 @@ function buildHouseholdFromRoom(room, residents) {
   const sortedResidents = [...residents].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const headResident = sortedResidents.find((resident) => resident.relation === 'Chủ hộ') || sortedResidents[0] || null;
   const address = sortedResidents.find((resident) => resident.address && resident.address.trim())?.address?.trim() || `Phòng ${room}`;
+  const members = sortedResidents.map((resident) => resident._id);
 
   return {
     code: room,
     apartment: room,
     address,
     headResidentId: headResident?._id || null,
-    members: sortedResidents.map((resident) => resident._id),
+    members,
+    memberCount: members.length,
   };
+}
+
+export async function syncHouseholdFromResidents(room) {
+  const normalizedRoom = (room || '').trim().toUpperCase();
+  if (!normalizedRoom) return null;
+
+  const activeResidents = await Resident.find({
+    room: normalizedRoom,
+    isDeleted: { $ne: true },
+  }).sort({ createdAt: 1 });
+
+  const payload = buildHouseholdFromRoom(normalizedRoom, activeResidents);
+  const existing = await Household.findOne({ code: normalizedRoom });
+
+  if (activeResidents.length === 0) {
+    if (existing) {
+      await Household.deleteOne({ _id: existing._id });
+    }
+    return null;
+  }
+
+  if (existing) {
+    const existingMembers = (existing.members || []).map((id) => String(id)).sort();
+    const payloadMembers = (payload.members || []).map((id) => String(id)).sort();
+    const hasChanges =
+      existing.apartment !== payload.apartment ||
+      existing.address !== payload.address ||
+      String(existing.headResidentId || '') !== String(payload.headResidentId || '') ||
+      existing.memberCount !== payload.memberCount ||
+      existingMembers.length !== payloadMembers.length ||
+      existingMembers.some((memberId, index) => memberId !== payloadMembers[index]);
+
+    if (hasChanges) {
+      await Household.updateOne({ _id: existing._id }, { $set: payload });
+    }
+    return payload;
+  }
+
+  await Household.create(payload);
+  return payload;
+}
+
+export async function syncHouseholdsFromResidents(residents = []) {
+  const rooms = [...new Set(
+    residents
+      .map((resident) => (resident.room || '').trim().toUpperCase())
+      .filter(Boolean)
+  )];
+
+  const results = [];
+  for (const room of rooms) {
+    const payload = await syncHouseholdFromResidents(room);
+    if (payload) results.push(payload);
+  }
+  return results;
 }
 
 export async function listHouseholds(_req, res) {
@@ -32,7 +89,14 @@ export async function createHousehold(req, res) {
     return res.status(409).json({ message: 'Mã hộ gia đình đã tồn tại' });
   }
 
-  const household = await Household.create({ code, apartment, address, headResidentId, members });
+  const household = await Household.create({
+    code,
+    apartment,
+    address,
+    headResidentId,
+    members,
+    memberCount: members.length,
+  });
   res.status(201).json({ message: 'Tạo hộ gia đình thành công', household });
 }
 

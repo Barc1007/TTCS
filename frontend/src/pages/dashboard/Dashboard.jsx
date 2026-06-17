@@ -48,7 +48,7 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, trend, trendUp 
 
 export default function Dashboard() {
   const { user }      = useAuth();
-  const { residents, loading } = useResidents();
+  const { residents, loading, dataVersion } = useResidents();
   const [stats, setStats]       = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const popupRef   = useRef(null);
@@ -81,7 +81,7 @@ export default function Dashboard() {
         setStatsLoading(false);
       }
     })();
-  }, []);
+  }, [dataVersion, residents.length]);
 
   // Vẽ biểu đồ khi stats load xong
   useEffect(() => {
@@ -201,12 +201,13 @@ export default function Dashboard() {
         ) : recentActivities.map((a, i) => {
           const action = String(a.action || '').replace(/\s*bởi\s+Seeder\b/gi, '').replace(/Seeder/gi, '').trim();
           const by = String(a.by || '').replace(/Seeder/gi, '').trim();
+          const hasByInAction = by && action.toLowerCase().includes(`bởi ${by.toLowerCase()}`);
           return (
           <div key={i} className="activity-item">
             <span className="activity-dot" style={{ background: dotColor(action) }}></span>
             <span className="activity-text">
               <strong>{a.name}</strong> — {action}
-              {by && by !== 'Hệ thống' ? <> bởi <em>{by}</em></> : null}
+              {by && by !== 'Hệ thống' && !hasByInAction ? <> bởi <em>{by}</em></> : null}
             </span>
             <span className="time">{timeAgo(a.at)}</span>
           </div>

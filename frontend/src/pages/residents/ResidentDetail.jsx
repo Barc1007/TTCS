@@ -106,9 +106,32 @@ export default function ResidentDetail() {
   const handleChange = (k, v) => { setEdits(e => ({ ...e, [k]: v })); setSaveError(''); };
   const handleSave = async () => {
     setSaveError('');
-    // Validate email định dạng nếu có nhập
+    const nextStatus = edits.status || resident.status;
+
     if (edits.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(edits.email)) {
       setSaveError('Email không đúng định dạng!');
+      return;
+    }
+    if (edits.regdate && edits.regdate > new Date().toISOString().split('T')[0]) {
+      setSaveError('Ngày đăng ký không được lớn hơn ngày hiện tại!');
+      return;
+    }
+    if (nextStatus === 'Tạm trú') {
+      if (edits.relation === 'Chủ hộ') {
+        setSaveError('Người tạm trú không thể là Chủ hộ!');
+        return;
+      }
+      if (!edits.tamTru?.address && !resident.tamTru?.address && !edits.address) {
+        setSaveError('Vui lòng nhập địa chỉ tạm trú trước khi đổi sang Tạm trú!');
+        return;
+      }
+    }
+    if (nextStatus === 'Tạm vắng' && edits.relation === 'Chủ hộ') {
+      setSaveError('Cư dân tạm vắng không thể là Chủ hộ!');
+      return;
+    }
+    if (nextStatus === 'Không ở' && edits.relation === 'Chủ hộ') {
+      setSaveError('Cư dân không ở không thể là Chủ hộ!');
       return;
     }
     // Kiểm tra Chủ hộ trùng phòng (frontend guard)
@@ -274,13 +297,18 @@ export default function ResidentDetail() {
       {canEdit && (
         <div className="card mt-16">
           <div className="card-header"><h3>Lịch Sử Biến Động</h3></div>
-          {(resident.history || []).length ? resident.history.map((item, index) => (
-            <div key={index} className="activity-item">
-              <span className="badge badge-blue">{item.action}</span>
-              <span className="activity-text">{item.by || 'Hệ thống'}</span>
-              <span className="time">{formatDate(String(item.at).slice(0, 10))}</span>
-            </div>
-          )) : (
+          {(resident.history || []).length ? resident.history.map((item, index) => {
+            const isSeed = /seed|Seeder/i.test(`${item.action} ${item.by}`);
+            const displayAction = isSeed ? 'dữ liệu được thêm bởi cán bộ quản lý' : item.action;
+            const displayBy = isSeed ? '' : (item.by || 'Hệ thống');
+            return (
+              <div key={index} className="activity-item">
+                <span className="badge badge-blue">{displayAction}</span>
+                {displayBy && <span className="activity-text">{displayBy}</span>}
+                <span className="time">{formatDate(String(item.at).slice(0, 10))}</span>
+              </div>
+            );
+          }) : (
             <div className="activity-item">
               <span className="badge badge-gray">Trống</span>
               <span>Chưa có lịch sử biến động</span>
