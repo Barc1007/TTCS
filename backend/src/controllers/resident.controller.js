@@ -91,7 +91,11 @@ export async function getResidentById(req, res) {
 }
 
 export async function createResident(req, res) {
-  const { cccd, name, dob, gender, room, status, address, ethnic, religion, job, relation, regdate, email, tamTruEnd } = req.body;
+  let { cccd, name, dob, gender, room, status, address, ethnic, religion, job, relation, regdate, email, tamTruEnd } = req.body;
+
+  if (room) {
+    room = room.trim().toUpperCase();
+  }
 
   if (!cccd || !name || !dob || !gender || !room || !regdate) {
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin bắt buộc' });
@@ -109,8 +113,15 @@ export async function createResident(req, res) {
     return res.status(400).json({ message: 'Người tạm trú không thể là Chủ hộ' });
   }
 
-  if (status === 'Tạm trú' && !tamTruEnd) {
-    return res.status(400).json({ message: 'Thiếu ngày kết thúc tạm trú' });
+  if (status === 'Tạm trú') {
+    if (!tamTruEnd) {
+      return res.status(400).json({ message: 'Thiếu ngày kết thúc tạm trú' });
+    }
+    const startDate = new Date(regdate);
+    const endDate = new Date(tamTruEnd);
+    if (endDate - startDate > 2 * 365 * 24 * 60 * 60 * 1000) {
+      return res.status(400).json({ message: 'Thời hạn tạm trú không được vượt quá 24 tháng (2 năm)' });
+    }
   }
 
   const existed = await Resident.findOne({ cccd });
@@ -181,6 +192,10 @@ export async function updateResident(req, res) {
   const resident = await Resident.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
+  }
+
+  if (req.body.room) {
+    req.body.room = req.body.room.trim().toUpperCase();
   }
 
   // Kiểm tra Chủ hộ khi cập nhật: nếu đang đổi relation thành 'Chủ hộ'
@@ -271,6 +286,11 @@ export async function registerTamTru(req, res) {
   }
   if (end < start) {
     return res.status(400).json({ message: 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' });
+  }
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (endDate - startDate > 2 * 365 * 24 * 60 * 60 * 1000) {
+    return res.status(400).json({ message: 'Thời hạn tạm trú không được vượt quá 24 tháng (2 năm)' });
   }
   if (resident.status === 'Tạm vắng') {
     return res.status(409).json({ message: 'Cư dân đang tạm vắng, không thể đăng ký tạm trú' });
