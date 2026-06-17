@@ -8,15 +8,49 @@ function addHistory(resident, action, by = 'Hệ thống') {
   resident.history.push({ action, by, at: new Date() });
 }
 
-export async function getResidentStats(_req, res) {
-  // Thống kê tổng hợp
-  const allResidents = await Resident.find({ isDeleted: { $ne: true } }, 'status createdAt history name');
+async function autoSoftDeleteExpired() {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const expiredTamTru = await Resident.find({ status: 'Tạm trú', isDeleted: { $ne: true }, 'tamTru.end': { $lt: todayStr } }, '_id');
+  if (expiredTamTru.length > 0) {
+    const ids = expiredTamTru.map(r => r._id);
+    await Resident.updateMany({ _id: { $in: ids } }, { $set: { isDeleted: true, deletedAt: new Date() } });
+    await User.updateMany({ residentId: { $in: ids } }, { $set: { isDeleted: true } });
+  }
 
-  const total     = allResidents.length;
-  const thuongtru = allResidents.filter(r => r.status === 'Thường trú').length;
-  const tamtru    = allResidents.filter(r => r.status === 'Tạm trú').length;
-  const tamvang   = allResidents.filter(r => r.status === 'Tạm vắng').length;
-  const khongo    = allResidents.filter(r => r.status === 'Không ở').length;
+  // Tự động revert Tạm vắng về Thường trú khi hết hạn
+  const expiredTamVang = await Resident.find({ status: 'Tạm vắng', isDeleted: { $ne: true }, 'tamVang.end': { $lt: todayStr } }, '_id');
+  if (expiredTamVang.length > 0) {
+    const ids = expiredTamVang.map(r => r._id);
+    await Resident.updateMany({ _id: { $in: ids } }, { $set: { status: 'Thường trú' } });
+  }
+
+  // Tự động kích hoạt Tạm vắng khi đến ngày đi
+  const upcomingTamVang = await Resident.find({ status: { $ne: 'Tạm vắng' }, isDeleted: { $ne: true }, 'tamVang.start': { $lte: todayStr }, 'tamVang.end': { $gte: todayStr } }, '_id');
+  if (upcomingTamVang.length > 0) {
+    const ids = upcomingTamVang.map(r => r._id);
+    await Resident.updateMany({ _id: { $in: ids } }, { $set: { status: 'Tạm vắng' } });
+  }
+
+  // Tự động kích hoạt Tạm trú khi đến ngày bắt đầu (nếu lưu trước mà chưa đến ngày)
+  const upcomingTamTru = await Resident.find({ status: { $ne: 'Tạm trú' }, isDeleted: { $ne: true }, 'tamTru.start': { $lte: todayStr }, 'tamTru.end': { $gte: todayStr }, 'tamTru.address': { $exists: true } }, '_id');
+  if (upcomingTamTru.length > 0) {
+    const ids = upcomingTamTru.map(r => r._id);
+    await Resident.updateMany({ _id: { $in: ids } }, { $set: { status: 'Tạm trú' } });
+  }
+}
+
+export async function getResidentStats(_req, res) {
+  await autoSoftDeleteExpired();
+
+  // Thống kê tổng hợp (Lấy toàn bộ để truy hồi quá khứ)
+  const allResidents = await Resident.find({});
+  const currentResidents = allResidents.filter(r => !r.isDeleted);
+
+  const total     = currentResidents.length;
+  const thuongtru = currentResidents.filter(r => r.status === 'Thường trú').length;
+  const tamtru    = currentResidents.filter(r => r.status === 'Tạm trú').length;
+  const tamvang   = currentResidents.filter(r => r.status === 'Tạm vắng').length;
+  const khongo    = currentResidents.filter(r => r.status === 'Không ở').length;
 
   // Thống kê theo tháng (6 tháng gần nhất)
   const now = new Date();
@@ -25,17 +59,41 @@ export async function getResidentStats(_req, res) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
     const label = `Th.${d.getMonth() + 1}`;
-    const count = allResidents.filter(r => new Date(r.createdAt) <= endOfMonth).length;
-    monthlyStats.push({ label, count });
+    const residentsAtTime = allResidents.filter(r => {
+      const dateToCompare = r.regdate ? new Date(r.regdate) : new Date(r.createdAt);
+      if (dateToCompare > endOfMonth) return false;
+
+      // Xử lý lịch sử Tạm trú
+      if (r.status === 'Tạm trú' && r.tamTru && r.tamTru.end) {
+        const tamTruEnd = new Date(r.tamTru.end);
+        if (tamTruEnd < endOfMonth) return false;
+      }
+
+      // Xử lý lịch sử Xóa mềm
+      if (r.isDeleted) {
+        const delDate = r.deletedAt ? new Date(r.deletedAt) : new Date(r.updatedAt);
+        if (delDate <= endOfMonth) return false;
+      }
+      return true;
+    });
+    const count = residentsAtTime.length;
+    const thuongtruCount = residentsAtTime.filter(r => r.status === 'Thường trú').length;
+    const tamtruCount = residentsAtTime.filter(r => r.status === 'Tạm trú').length;
+    const tamvangCount = residentsAtTime.filter(r => r.status === 'Tạm vắng').length;
+    const khongoCount = residentsAtTime.filter(r => r.status === 'Không ở').length;
+    monthlyStats.push({ label, count, thuongtru: thuongtruCount, tamtru: tamtruCount, tamvang: tamvangCount, khongo: khongoCount });
   }
 
   // Lịch sử hoạt động gần đây (gộp tất cả history từ residents, lấy 10 mục mới nhất)
   const activities = [];
   for (const resident of allResidents) {
     for (const h of resident.history || []) {
+      const normalizedAction = /seed|Seeder/i.test(`${h.action} ${h.by}`)
+        ? 'Được thêm bởi cán bộ quản lý'
+        : h.action.replace(/\s+bởi\s+Seeder\b/i, '').trim();
       activities.push({
         name: resident.name,
-        action: h.action,
+        action: normalizedAction,
         by: h.by,
         at: h.at,
       });
@@ -56,6 +114,8 @@ export async function getResidentStats(_req, res) {
 }
 
 export async function listResidents(_req, res) {
+  await autoSoftDeleteExpired();
+
   const residents = await Resident.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
   res.json({ residents });
 }
@@ -69,7 +129,11 @@ export async function getResidentById(req, res) {
 }
 
 export async function createResident(req, res) {
-  const { cccd, name, dob, gender, room, status, address, ethnic, religion, job, relation, regdate, email, tamTruEnd } = req.body;
+  let { cccd, name, dob, gender, room, status, address, ethnic, religion, job, relation, regdate, email, tamTruEnd } = req.body;
+
+  if (room) {
+    room = room.trim().toUpperCase();
+  }
 
   if (!cccd || !name || !dob || !gender || !room || !regdate) {
     return res.status(400).json({ message: 'Vui lòng nhập đầy đủ thông tin bắt buộc' });
@@ -87,8 +151,15 @@ export async function createResident(req, res) {
     return res.status(400).json({ message: 'Người tạm trú không thể là Chủ hộ' });
   }
 
-  if (status === 'Tạm trú' && !tamTruEnd) {
-    return res.status(400).json({ message: 'Thiếu ngày kết thúc tạm trú' });
+  if (status === 'Tạm trú') {
+    if (!tamTruEnd) {
+      return res.status(400).json({ message: 'Thiếu ngày kết thúc tạm trú' });
+    }
+    const startDate = new Date(regdate);
+    const endDate = new Date(tamTruEnd);
+    if (endDate - startDate > 2 * 365 * 24 * 60 * 60 * 1000) {
+      return res.status(400).json({ message: 'Thời hạn tạm trú không được vượt quá 24 tháng (2 năm)' });
+    }
   }
 
   const existed = await Resident.findOne({ cccd });
@@ -121,7 +192,9 @@ export async function createResident(req, res) {
     relation: relation || 'Chủ hộ',
     regdate,
     tamTru: status === 'Tạm trú' ? { address: address || '', start: regdate, end: tamTruEnd, reason: '', phone: '' } : null,
-    history: [{ action: 'Thêm mới cư dân', by: req.user?.name || 'Hệ thống', at: new Date() }],
+    history: [{ action: 'Được thêm bởi Cán bộ quản lý', by: 'Cán bộ quản lý', at: new Date() }],
+    isDeleted: (status === 'Tạm trú' && tamTruEnd && tamTruEnd < new Date().toISOString().split('T')[0]) ? true : false,
+    deletedAt: (status === 'Tạm trú' && tamTruEnd && tamTruEnd < new Date().toISOString().split('T')[0]) ? new Date() : null,
   });
 
   const defaultPassword = cccd.slice(-8);           // 8 số cuối CCCD là mật khẩu mặc định
@@ -147,6 +220,7 @@ export async function createResident(req, res) {
     role:               'resident',
     residentId:         resident._id,
     mustChangePassword: true,
+    isDeleted:          resident.isDeleted,
   });
 
 
@@ -157,6 +231,10 @@ export async function updateResident(req, res) {
   const resident = await Resident.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
   if (!resident) {
     return res.status(404).json({ message: 'Không tìm thấy cư dân' });
+  }
+
+  if (req.body.room) {
+    req.body.room = req.body.room.trim().toUpperCase();
   }
 
   // Kiểm tra Chủ hộ khi cập nhật: nếu đang đổi relation thành 'Chủ hộ'
@@ -197,6 +275,16 @@ export async function updateResident(req, res) {
   }
 
   Object.assign(resident, req.body);
+  if (resident.status === 'Tạm trú' && resident.tamTru?.end && resident.tamTru.end < new Date().toISOString().split('T')[0]) {
+    resident.isDeleted = true;
+    resident.deletedAt = new Date();
+    await User.findOneAndUpdate({ residentId: resident._id }, { isDeleted: true });
+  }
+  // Cập nhật Tạm vắng nếu đã hết hạn
+  if (resident.status === 'Tạm vắng' && resident.tamVang?.end && resident.tamVang.end < new Date().toISOString().split('T')[0]) {
+    resident.status = 'Thường trú';
+  }
+
   addHistory(resident, 'Cập nhật thông tin cư dân', req.user?.name || 'Hệ thống');
   await resident.save();
 
@@ -222,6 +310,7 @@ export async function deleteResident(req, res) {
 
   // Soft delete cư dân
   resident.isDeleted = true;
+  resident.deletedAt = new Date();
   addHistory(resident, 'Xóa cư dân (Soft Delete)', req.user?.name || 'Hệ thống');
   await resident.save();
 
@@ -244,12 +333,27 @@ export async function registerTamTru(req, res) {
   if (end < start) {
     return res.status(400).json({ message: 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' });
   }
+  if (start < resident.regdate) {
+    return res.status(400).json({ message: `Ngày bắt đầu không được nhỏ hơn Ngày đăng ký cư trú (${resident.regdate})` });
+  }
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (endDate - startDate > 2 * 365 * 24 * 60 * 60 * 1000) {
+    return res.status(400).json({ message: 'Thời hạn tạm trú không được vượt quá 24 tháng (2 năm)' });
+  }
   if (resident.status === 'Tạm vắng') {
     return res.status(409).json({ message: 'Cư dân đang tạm vắng, không thể đăng ký tạm trú' });
   }
 
-  resident.status = 'Tạm trú';
   resident.tamTru = { address, start, end, reason: reason || '', phone };
+  if (start <= new Date().toISOString().split('T')[0]) {
+    resident.status = 'Tạm trú';
+  }
+  if (end < new Date().toISOString().split('T')[0]) {
+    resident.isDeleted = true;
+    resident.deletedAt = new Date();
+    await User.findOneAndUpdate({ residentId: resident._id }, { isDeleted: true });
+  }
   addHistory(resident, 'Đăng ký tạm trú', req.user?.name || 'Hệ thống');
   await resident.save();
 
@@ -272,12 +376,17 @@ export async function registerTamVang(req, res) {
   if (end < start) {
     return res.status(400).json({ message: 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu' });
   }
+  if (start < resident.regdate) {
+    return res.status(400).json({ message: `Ngày đi không được nhỏ hơn Ngày đăng ký cư trú (${resident.regdate})` });
+  }
   if (resident.status === 'Tạm trú') {
     return res.status(409).json({ message: 'Cư dân đang tạm trú, cần kết thúc tạm trú trước' });
   }
 
-  resident.status = 'Tạm vắng';
   resident.tamVang = { destination, start, end, reason: reason || '', phone };
+  if (start <= new Date().toISOString().split('T')[0]) {
+    resident.status = 'Tạm vắng';
+  }
   addHistory(resident, 'Đăng ký tạm vắng', req.user?.name || 'Hệ thống');
   await resident.save();
 
@@ -329,21 +438,45 @@ export async function exportResidentsPDF(req, res) {
 
     const { startDate, endDate } = parsePeriod(period);
 
-    // Lấy thống kê
-    const allResidents = await Resident.find({ isDeleted: { $ne: true } });
-    const total = allResidents.length;
-    const thuongtru = allResidents.filter(r => r.status === 'Thường trú').length;
-    const tamtru = allResidents.filter(r => r.status === 'Tạm trú').length;
-    const tamvang = allResidents.filter(r => r.status === 'Tạm vắng').length;
+    // Lấy thống kê toàn bộ lịch sử
+    const allResidents = await Resident.find({});
+    
+    // Lọc ra những cư dân được tạo trước hoặc trong kỳ báo cáo
+    const validResidents = allResidents.filter(r => {
+      const dateToCompare = r.regdate ? new Date(r.regdate) : new Date(r.createdAt);
+      if (endDate && dateToCompare > endDate) return false;
+
+      // Xử lý Tạm trú quá hạn
+      if (r.status === 'Tạm trú' && r.tamTru && r.tamTru.end) {
+        const tamTruEnd = new Date(r.tamTru.end);
+        if (endDate && tamTruEnd < endDate) return false;
+      }
+
+      // Xử lý người đã bị xóa (Soft Delete)
+      if (r.isDeleted) {
+        if (endDate) {
+          const delDate = r.deletedAt ? new Date(r.deletedAt) : new Date(r.updatedAt);
+          if (delDate <= endDate) return false;
+        } else {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    const total = validResidents.length;
+    const thuongtru = validResidents.filter(r => r.status === 'Thường trú').length;
+    const tamtru = validResidents.filter(r => r.status === 'Tạm trú').length;
+    const tamvang = validResidents.filter(r => r.status === 'Tạm vắng').length;
     const stats = { total, thuongtru, tamtru, tamvang };
 
     let data = [];
     if (type === 'tonghop') {
-      data = await Resident.find({ isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+      data = validResidents.sort((a,b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
     } else if (type === 'tamtru') {
-      data = await Resident.find({ status: 'Tạm trú', isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+      data = validResidents.filter(r => r.status === 'Tạm trú').sort((a,b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
     } else if (type === 'tamvang') {
-      data = await Resident.find({ status: 'Tạm vắng', isDeleted: { $ne: true } }).sort({ room: 1, name: 1 });
+      data = validResidents.filter(r => r.status === 'Tạm vắng').sort((a,b) => a.room.localeCompare(b.room) || a.name.localeCompare(b.name));
     } else if (type === 'biendong') {
       for (const r of allResidents) {
         for (const h of r.history || []) {

@@ -5,6 +5,7 @@ const ResidentContext = createContext(null);
 
 export function ResidentProvider({ children }) {
   const [residents, setResidents] = useState([]);
+  const [households, setHouseholds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState(null);
@@ -17,8 +18,12 @@ export function ResidentProvider({ children }) {
   const loadResidents = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/residents');
-      setResidents(data.residents || []);
+      const [residentsData, householdsData] = await Promise.all([
+        api.get('/residents'),
+        api.get('/households'),
+      ]);
+      setResidents(residentsData.residents || []);
+      setHouseholds(householdsData.households || []);
     } catch (error) {
       showToast(`❌ ${error.message}`);
     } finally {
@@ -32,14 +37,20 @@ export function ResidentProvider({ children }) {
 
   const addResident = async (payload) => {
     const data = await api.post('/residents', payload);
-    setResidents((prev) => [data.resident, ...prev]);
+    if (!data.resident.isDeleted) {
+      setResidents((prev) => [data.resident, ...prev]);
+    }
     showToast(`✅ Đã thêm cư dân ${data.resident.name}`);
     return data.resident;
   };
 
   const updateResident = async (id, payload) => {
     const data = await api.put(`/residents/${id}`, payload);
-    setResidents((prev) => prev.map((resident) => (resident._id === id ? data.resident : resident)));
+    if (data.resident.isDeleted) {
+      setResidents((prev) => prev.filter((r) => r._id !== id));
+    } else {
+      setResidents((prev) => prev.map((resident) => (resident._id === id ? data.resident : resident)));
+    }
     showToast('✅ Đã cập nhật thông tin');
     return data.resident;
   };
@@ -56,7 +67,11 @@ export function ResidentProvider({ children }) {
 
   const registerTamTru = async (id, payload) => {
     const data = await api.post(`/residents/${id}/tam-tru`, payload);
-    setResidents((prev) => prev.map((resident) => (resident._id === id ? data.resident : resident)));
+    if (data.resident.isDeleted) {
+      setResidents((prev) => prev.filter((r) => r._id !== id));
+    } else {
+      setResidents((prev) => prev.map((resident) => (resident._id === id ? data.resident : resident)));
+    }
     showToast('✅ Đăng ký tạm trú thành công!');
     return data.resident;
   };
@@ -75,6 +90,7 @@ export function ResidentProvider({ children }) {
     <ResidentContext.Provider
       value={{
         residents,
+        households,
         loading,
         addResident,
         updateResident,

@@ -32,6 +32,7 @@ import Dashboard      from './pages/dashboard/Dashboard';
 import ResidentList   from './pages/residents/ResidentList';
 import ResidentAdd    from './pages/residents/ResidentAdd';
 import ResidentDetail from './pages/residents/ResidentDetail';
+import Household      from './pages/residents/Apartments';
 import TamTru         from './pages/residents/TamTru';
 import TamVang        from './pages/residents/TamVang';
 import Reports        from './pages/reports/Reports';
@@ -84,6 +85,7 @@ function AuthGate() {
               <Route path="/dashboard"     element={<Dashboard />} />
 
               {/* Quản lý cư dân */}
+              <Route path="/households"    element={<Household />} />
               <Route path="/residents"     element={<ResidentList />} />
               <Route path="/residents/add" element={<ResidentAdd />} />
               <Route path="/residents/:id" element={<ResidentDetail />} />

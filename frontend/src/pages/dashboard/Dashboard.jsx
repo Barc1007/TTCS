@@ -198,16 +198,20 @@ export default function Dashboard() {
         <div className="card-header"><h3>Hoạt động gần đây</h3></div>
         {recentActivities.length === 0 ? (
           <div className="activity-item" style={{ color: 'var(--text-muted)' }}>Chưa có hoạt động nào.</div>
-        ) : recentActivities.map((a, i) => (
+        ) : recentActivities.map((a, i) => {
+          const action = String(a.action || '').replace(/\s*bởi\s+Seeder\b/gi, '').replace(/Seeder/gi, '').trim();
+          const by = String(a.by || '').replace(/Seeder/gi, '').trim();
+          return (
           <div key={i} className="activity-item">
-            <span className="activity-dot" style={{ background: dotColor(a.action) }}></span>
+            <span className="activity-dot" style={{ background: dotColor(action) }}></span>
             <span className="activity-text">
-              <strong>{a.name}</strong> — {a.action}
-              {a.by && a.by !== 'Hệ thống' ? <> bởi <em>{a.by}</em></> : null}
+              <strong>{a.name}</strong> — {action}
+              {by && by !== 'Hệ thống' ? <> bởi <em>{by}</em></> : null}
             </span>
             <span className="time">{timeAgo(a.at)}</span>
           </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
