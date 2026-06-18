@@ -49,25 +49,7 @@ export default function ChangePassword() {
           <h1 className="auth-brand-title">ResidentIQ</h1>
           <p className="auth-brand-sub">Hệ Thống Quản Lý Dân Cư Thông Minh</p>
 
-          <div className="auth-features">
-            <div className="auth-feature-item">
-              <span className="auth-feature-dot" style={{ background: '#34d399' }} />
-              Tài khoản cư dân được bảo mật
-            </div>
-            <div className="auth-feature-item">
-              <span className="auth-feature-dot" style={{ background: '#60a5fa' }} />
-              Xem thông tin cư trú cá nhân
-            </div>
-            <div className="auth-feature-item">
-              <span className="auth-feature-dot" style={{ background: '#f472b6' }} />
-              Theo dõi trạng thái tạm trú / tạm vắng
-            </div>
-          </div>
 
-          <div className="auth-brand-badge">
-            <span className="brand-badge-dot" />
-            Hệ thống đang hoạt động ổn định
-          </div>
         </div>
 
         <div className="auth-deco-circle auth-deco-1" />

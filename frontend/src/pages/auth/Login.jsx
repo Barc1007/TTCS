@@ -36,29 +36,7 @@ export default function Login({ onSwitch }) {
           <h1 className="auth-brand-title">ResidentIQ</h1>
           <p className="auth-brand-sub">Cổng thông tin dành cho cư dân và ban quản lý chung cư</p>
 
-          <div className="auth-features">
-            <div className="auth-feature-item">
-              <span className="auth-feature-dot" style={{ background: '#34d399' }} />
-              Xem thông tin cư trú cá nhân
-            </div>
-            <div className="auth-feature-item">
-              <span className="auth-feature-dot" style={{ background: '#60a5fa' }} />
-              Theo dõi trạng thái tạm trú & tạm vắng
-            </div>
-            <div className="auth-feature-item">
-              <span className="auth-feature-dot" style={{ background: '#f472b6' }} />
-              Tra cứu lịch sử biến động hồ sơ
-            </div>
-            <div className="auth-feature-item">
-              <span className="auth-feature-dot" style={{ background: '#fbbf24' }} />
-              Đăng nhập an toàn, bảo mật thông tin
-            </div>
-          </div>
 
-          <div className="auth-brand-badge">
-            <span className="brand-badge-dot" />
-            Hệ thống đang hoạt động ổn định
-          </div>
         </div>
 
         {/* Decorative circles */}
